@@ -109,6 +109,8 @@
   .pill.role-admin { background: color-mix(in srgb, var(--warning) 20%, transparent); color: #8a5a00; }
   [data-theme="dark"] .pill.role-admin { color: var(--warning); }
   .pill.role-staff { background: color-mix(in srgb, var(--series-1) 15%, transparent); color: var(--series-1); }
+  .btn-link-num { border:none; background:none; padding:0; font: inherit; font-variant-numeric: tabular-nums; color: var(--series-1); cursor:pointer; text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 2px; }
+  .btn-link-num:hover { color: var(--text-primary); }
 
   .toolbar { display:flex; align-items:center; justify-content:space-between; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
   .toolbar .filters { display:flex; gap: 8px; align-items:flex-end; flex-wrap: wrap; }
@@ -286,11 +288,14 @@
         <div class="card">
           <div class="toolbar">
             <div><h3 style="margin:0">Approvisionnement &amp; mouvements de stock</h3><p class="desc" style="margin:2px 0 0">Historique de tous les mouvements de stock, modifiable ou supprimable en cas d'erreur</p></div>
-            <select id="filter-mvt-type" class="btn-sm">
-              <option value="entree">Entrées (réassorts/achats)</option>
-              <option value="sortie">Sorties (ventes)</option>
-              <option value="">Tous les mouvements</option>
-            </select>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <span id="appro-article-filter-chip" style="display:none;"></span>
+              <select id="filter-mvt-type" class="btn-sm">
+                <option value="entree">Entrées (réassorts/achats)</option>
+                <option value="sortie">Sorties (ventes)</option>
+                <option value="">Tous les mouvements</option>
+              </select>
+            </div>
           </div>
           <div class="table-wrap">
             <table id="tbl-approvisionnement"><thead><tr><th>Date</th><th>Type</th><th>Article</th><th class="num">Quantité</th><th class="num">Montant</th><th>Note</th><th>Justificatif</th><th>Par</th><th></th></tr></thead><tbody></tbody></table>
@@ -311,7 +316,7 @@
           <div class="table-wrap">
             <table id="tbl-articles">
               <thead><tr>
-                <th>Code</th><th>Libellé</th><th>Catégorie</th><th class="num">Entrée</th><th class="num">Sortie</th>
+                <th>Photo</th><th>Code</th><th>Libellé</th><th>Catégorie</th><th class="num">Entrée</th><th class="num">Sortie</th>
                 <th class="num">Stock</th><th>Statut</th><th class="num">Prix vente</th>
                 <th class="num">Achats</th><th class="num">Ventes</th><th class="num">Valeur stock</th><th></th>
               </tr></thead>
@@ -477,6 +482,7 @@
     <div class="field"><label>Libellé</label><input id="art-libelle" /></div>
     <div class="field"><label>Catégorie</label><input id="art-categorie" list="art-categorie-list" placeholder="ex: Vêtements" /><datalist id="art-categorie-list"></datalist></div>
     <div class="field"><label>Prix de vente (FCFA)</label><input id="art-prix" type="number" min="0" /></div>
+    <div class="field"><label>Photo du produit</label><input id="art-photo-file" type="file" accept="image/*" /><img id="art-photo-preview" style="display:none;max-height:90px;border-radius:8px;margin-top:6px;" /></div>
     <div class="dialog-actions"><button class="btn" id="art-cancel">Annuler</button><button class="btn btn-primary" id="art-confirm">Créer</button></div>
   </div>
 </dialog>
@@ -485,6 +491,7 @@
   <div class="dialog-body">
     <h3 id="em-title">Modifier le mouvement</h3>
     <input type="hidden" id="em-id" />
+    <div class="field"><label>Type</label><select id="em-type"><option value="entree">Entrée (réassort/achat)</option><option value="sortie">Sortie (vente)</option></select></div>
     <div class="field"><label>Date</label><input id="em-date" type="date" /></div>
     <div class="field"><label>Quantité</label><input id="em-qte" type="number" min="1" /></div>
     <div class="field"><label>Montant (FCFA)</label><input id="em-montant" type="number" min="0" /></div>
@@ -721,6 +728,7 @@ document.querySelectorAll('nav.tabs button').forEach(btn => {
     btn.classList.add('active');
     document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
     if (btn.dataset.tab === 'equipe') renderTeamTable();
+    if (btn.dataset.tab === 'approvisionnement') renderApprovisionnementTable();
   });
 });
 
@@ -923,11 +931,14 @@ function renderArticlesTable() {
   let lastCat = null; let rows = '';
   sorted.forEach(a => {
     const cat = a.categorie || 'Sans catégorie';
-    if (cat !== lastCat) { rows += `<tr><td colspan="12" style="background:var(--page);font-weight:600;font-size:12px;color:var(--text-secondary);padding-top:12px;">${escapeHtml(cat)}</td></tr>`; lastCat = cat; }
+    if (cat !== lastCat) { rows += `<tr><td colspan="13" style="background:var(--page);font-weight:600;font-size:12px;color:var(--text-secondary);padding-top:12px;">${escapeHtml(cat)}</td></tr>`; lastCat = cat; }
     rows += `
     <tr>
+      <td>${a.photo_url ? `<img src="${escapeHtml(a.photo_url)}" alt="" style="width:36px;height:36px;object-fit:cover;border-radius:6px;" />` : '<span style="color:var(--text-muted)">—</span>'}</td>
       <td>${escapeHtml(a.code)}</td><td>${escapeHtml(a.libelle)}</td><td>${escapeHtml(a.categorie||'—')}</td>
-      <td class="num">${a.entree}</td><td class="num">${a.sortie}</td><td class="num">${a.stock_restant}</td>
+      <td class="num"><button class="btn-link-num" data-goto-mvts="${a.id}" title="Voir/modifier le détail des entrées">${a.entree}</button></td>
+      <td class="num"><button class="btn-link-num" data-goto-mvts="${a.id}" title="Voir/modifier le détail des sorties">${a.sortie}</button></td>
+      <td class="num">${a.stock_restant}</td>
       <td><span class="pill ${a.statut==='Vente possible'?'ok':'no'}">${a.statut}</span></td>
       <td class="num">${a.prix_vente!=null ? fmt(a.prix_vente) : '—'}</td>
       <td class="num">${fmt(a.montant_total_achats)}</td><td class="num">${fmt(a.montant_total_ventes)}</td><td class="num">${fmt(a.valeur_stock)}</td>
@@ -939,9 +950,14 @@ function renderArticlesTable() {
       </td>
     </tr>`;
   });
-  tbody.innerHTML = rows || '<tr><td colspan="12" style="color:var(--text-muted)">Aucun article.</td></tr>';
+  tbody.innerHTML = rows || '<tr><td colspan="13" style="color:var(--text-muted)">Aucun article.</td></tr>';
   tbody.querySelectorAll('button[data-action]').forEach(btn => btn.addEventListener('click', () => openMouvementStockDialog(btn.dataset.id, btn.dataset.action, btn.dataset.code)));
   tbody.querySelectorAll('button[data-edit-art]').forEach(btn => btn.addEventListener('click', () => openEditArticle(btn.dataset.editArt)));
+  tbody.querySelectorAll('button[data-goto-mvts]').forEach(btn => btn.addEventListener('click', () => {
+    APPRO_ARTICLE_FILTER = btn.dataset.gotoMvts;
+    document.getElementById('filter-mvt-type').value = '';
+    document.querySelector('nav.tabs button[data-tab="approvisionnement"]').click();
+  }));
   tbody.querySelectorAll('button[data-del-art]').forEach(btn => btn.addEventListener('click', async () => {
     if (!confirm(`Supprimer l'article ${btn.dataset.code} ? Tout son historique de mouvements sera aussi supprimé. Cette action est irréversible.`)) return;
     const { error } = await sb.from('articles').delete().eq('id', btn.dataset.delArt);
@@ -955,6 +971,9 @@ document.getElementById('btn-new-article').addEventListener('click', () => {
   document.getElementById('art-title').textContent = 'Nouvel article';
   document.getElementById('art-id').value = '';
   document.getElementById('art-code').value = ''; document.getElementById('art-libelle').value = ''; document.getElementById('art-prix').value = ''; document.getElementById('art-categorie').value = '';
+  document.getElementById('art-photo-file').value = '';
+  document.getElementById('art-photo-preview').style.display = 'none';
+  document.getElementById('art-photo-preview').dataset.existing = '';
   document.getElementById('art-confirm').textContent = 'Créer';
   document.getElementById('dlg-article').showModal();
 });
@@ -967,9 +986,21 @@ function openEditArticle(id) {
   document.getElementById('art-libelle').value = a.libelle;
   document.getElementById('art-prix').value = a.prix_vente != null ? a.prix_vente : '';
   document.getElementById('art-categorie').value = a.categorie || '';
+  document.getElementById('art-photo-file').value = '';
+  const preview = document.getElementById('art-photo-preview');
+  if (a.photo_url) { preview.src = a.photo_url; preview.style.display = 'inline-block'; preview.dataset.existing = a.photo_url; }
+  else { preview.style.display = 'none'; preview.dataset.existing = ''; }
   document.getElementById('art-confirm').textContent = 'Enregistrer';
   document.getElementById('dlg-article').showModal();
 }
+document.getElementById('art-photo-file').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  const preview = document.getElementById('art-photo-preview');
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => { preview.src = reader.result; preview.style.display = 'inline-block'; };
+  reader.readAsDataURL(file);
+});
 document.getElementById('art-cancel').addEventListener('click', () => document.getElementById('dlg-article').close());
 document.getElementById('art-confirm').addEventListener('click', async () => {
   const id = document.getElementById('art-id').value;
@@ -978,7 +1009,15 @@ document.getElementById('art-confirm').addEventListener('click', async () => {
   const prix = document.getElementById('art-prix').value;
   const categorie = document.getElementById('art-categorie').value.trim() || null;
   if (!code || !libelle) return alert('Code et libellé sont requis.');
-  const payload = { code, libelle, prix_vente: prix ? Number(prix) : null, categorie };
+  let photo_url = document.getElementById('art-photo-preview').dataset.existing || null;
+  const file = document.getElementById('art-photo-file').files[0];
+  if (file) {
+    const path = `${code}-${Date.now()}-${file.name}`.replace(/\s+/g, '_');
+    const { error: upErr } = await sb.storage.from('produits').upload(path, file, { upsert: true });
+    if (upErr) return alert("La photo n'a pas pu être envoyée : " + upErr.message);
+    photo_url = sb.storage.from('produits').getPublicUrl(path).data.publicUrl;
+  }
+  const payload = { code, libelle, prix_vente: prix ? Number(prix) : null, categorie, photo_url };
   const { error } = id
     ? await sb.from('articles').update(payload).eq('id', id)
     : await sb.from('articles').insert(payload);
@@ -1171,9 +1210,19 @@ document.getElementById('btn-save-settings').addEventListener('click', async () 
 });
 
 /* ---------- APPROVISIONNEMENT / MOUVEMENTS DE STOCK (admin only) ---------- */
+let APPRO_ARTICLE_FILTER = null;
 function renderApprovisionnementTable() {
   const typeFilter = document.getElementById('filter-mvt-type').value;
-  const rows = STOCK_MVTS.filter(m => !typeFilter || m.type === typeFilter).sort((a,b)=> b.date.localeCompare(a.date));
+  const chip = document.getElementById('appro-article-filter-chip');
+  if (APPRO_ARTICLE_FILTER) {
+    const art = ARTICLES.find(a => a.id === APPRO_ARTICLE_FILTER);
+    chip.style.display = 'inline-flex';
+    chip.innerHTML = `<span class="pill">Article : ${escapeHtml(art ? art.code : '?')} <button id="appro-clear-filter" style="border:none;background:none;cursor:pointer;font-weight:700;margin-left:4px;">✕</button></span>`;
+    document.getElementById('appro-clear-filter').addEventListener('click', () => { APPRO_ARTICLE_FILTER = null; renderApprovisionnementTable(); });
+  } else {
+    chip.style.display = 'none'; chip.innerHTML = '';
+  }
+  const rows = STOCK_MVTS.filter(m => (!typeFilter || m.type === typeFilter) && (!APPRO_ARTICLE_FILTER || m.article_id === APPRO_ARTICLE_FILTER)).sort((a,b)=> b.date.localeCompare(a.date));
   document.querySelector('#tbl-approvisionnement tbody').innerHTML = rows.map(m => `
     <tr>
       <td>${m.date}</td><td><span class="pill ${m.type==='entree'?'ok':'no'}">${m.type==='entree'?'Entrée':'Sortie'}</span></td>
@@ -1198,6 +1247,7 @@ function openEditMouvement(id) {
   if (!m) return;
   document.getElementById('em-title').textContent = 'Modifier — ' + (m.articles ? m.articles.code + ' · ' + m.articles.libelle : '');
   document.getElementById('em-id').value = m.id;
+  document.getElementById('em-type').value = m.type;
   document.getElementById('em-date').value = m.date;
   document.getElementById('em-qte').value = m.quantite;
   document.getElementById('em-montant').value = m.montant;
@@ -1207,12 +1257,13 @@ function openEditMouvement(id) {
 document.getElementById('em-cancel').addEventListener('click', () => document.getElementById('dlg-edit-mouvement').close());
 document.getElementById('em-confirm').addEventListener('click', async () => {
   const id = document.getElementById('em-id').value;
+  const type = document.getElementById('em-type').value;
   const date = document.getElementById('em-date').value;
   const quantite = Number(document.getElementById('em-qte').value);
   const montant = Number(document.getElementById('em-montant').value || 0);
   const note = document.getElementById('em-note').value.trim() || null;
   if (!quantite || quantite <= 0) return alert('Quantité invalide.');
-  const { error } = await sb.from('mouvements_stock').update({ date, quantite, montant, note }).eq('id', id);
+  const { error } = await sb.from('mouvements_stock').update({ type, date, quantite, montant, note }).eq('id', id);
   if (error) return alert('Erreur : ' + error.message);
   document.getElementById('dlg-edit-mouvement').close();
   await loadAll();
@@ -1363,7 +1414,7 @@ document.getElementById('prb-confirm').addEventListener('click', async () => {
 
 /* ---------- SIMPLE MODE (staff) ---------- */
 async function loadSimple() {
-  const { data: articles, error } = await sb.from('v_articles_stock').select('id,code,libelle,stock_restant,statut,categorie').order('categorie').order('libelle');
+  const { data: articles, error } = await sb.from('v_articles_stock').select('id,code,libelle,stock_restant,statut,categorie,photo_url').order('categorie').order('libelle');
   if (error) { document.getElementById('data-warning').style.display='block'; document.getElementById('data-warning').textContent = error.message; return; }
   ARTICLES = articles || [];
   const cats = Array.from(new Set(ARTICLES.map(a => a.categorie).filter(Boolean))).sort();
@@ -1383,6 +1434,7 @@ function renderSimpleList() {
     if (cat !== lastCat) { html += `<div style="font-size:12px;font-weight:600;color:var(--text-secondary);margin:14px 0 6px;">${escapeHtml(cat)}</div>`; lastCat = cat; }
     html += `
     <div class="simple-card">
+      ${a.photo_url ? `<img src="${escapeHtml(a.photo_url)}" alt="" style="width:46px;height:46px;object-fit:cover;border-radius:10px;flex-shrink:0;" />` : ''}
       <div class="info">
         <div class="code">${escapeHtml(a.code)}</div>
         <div class="name">${escapeHtml(a.libelle)}</div>
