@@ -781,7 +781,7 @@ function attachJustificatifLinks(root) {
 async function loadAll() {
   const [{data: articles, error: e1}, {data: sm, error: e2}, {data: cm, error: e3}, {data: fr, error: e4}, {data: pr, error: e5}, {data: ff, error: e6}] = await Promise.all([
     sb.from('v_articles_stock').select('*').order('code'),
-    sb.from('mouvements_stock').select('id,date,type,quantite,montant,note,article_id,created_by,justificatif_path,articles(code,libelle)').order('date'),
+    sb.from('mouvements_stock').select('id,date,type,quantite,montant,note,article_id,created_by,created_at,justificatif_path,articles(code,libelle)').order('date'),
     sb.from('mouvements_tresorerie').select('*').order('date'),
     sb.from('fournisseurs').select('*').order('nom'),
     sb.from('prets').select('*').order('date', {ascending:false}),
@@ -922,20 +922,34 @@ function populateCategoryPickers() {
   filterSel.innerHTML = '<option value="">Toutes catégories</option>' + cats.filter(c => ARTICLES.some(a=>a.categorie===c)).map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
   filterSel.value = current;
 }
+function lastMovementByArticle() {
+  const map = new Map();
+  STOCK_MVTS.forEach(m => {
+    const prev = map.get(m.article_id);
+    const ts = m.created_at || m.date;
+    if (!prev || ts > (prev.created_at || prev.date)) map.set(m.article_id, m);
+  });
+  return map;
+}
 function renderArticlesTable() {
   populateCategoryPickers();
   const filterVal = document.getElementById('filter-categorie').value;
   const tbody = document.querySelector('#tbl-articles tbody');
   const sorted = [...ARTICLES].filter(a => !filterVal || a.categorie === filterVal)
     .sort((a,b) => (a.categorie||'zzz').localeCompare(b.categorie||'zzz') || a.code.localeCompare(b.code));
+  const lastMvt = lastMovementByArticle();
   let lastCat = null; let rows = '';
   sorted.forEach(a => {
     const cat = a.categorie || 'Sans catégorie';
     if (cat !== lastCat) { rows += `<tr><td colspan="13" style="background:var(--page);font-weight:600;font-size:12px;color:var(--text-secondary);padding-top:12px;">${escapeHtml(cat)}</td></tr>`; lastCat = cat; }
+    const lm = lastMvt.get(a.id);
+    const lastByHtml = lm
+      ? `<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">${lm.type==='entree'?'Entrée':'Vente'} par <b>${escapeHtml(lm.created_by||'?')}</b> · ${escapeHtml(lm.date)}</div>`
+      : '';
     rows += `
     <tr>
       <td>${a.photo_url ? `<img src="${escapeHtml(a.photo_url)}" alt="" style="width:36px;height:36px;object-fit:cover;border-radius:6px;" />` : '<span style="color:var(--text-muted)">—</span>'}</td>
-      <td>${escapeHtml(a.code)}</td><td>${escapeHtml(a.libelle)}</td><td>${escapeHtml(a.categorie||'—')}</td>
+      <td>${escapeHtml(a.code)}</td><td>${escapeHtml(a.libelle)}${lastByHtml}</td><td>${escapeHtml(a.categorie||'—')}</td>
       <td class="num"><button class="btn-link-num" data-goto-mvts="${a.id}" title="Voir/modifier le détail des entrées">${a.entree}</button></td>
       <td class="num"><button class="btn-link-num" data-goto-mvts="${a.id}" title="Voir/modifier le détail des sorties">${a.sortie}</button></td>
       <td class="num">${a.stock_restant}</td>
@@ -1414,9 +1428,13 @@ document.getElementById('prb-confirm').addEventListener('click', async () => {
 
 /* ---------- SIMPLE MODE (staff) ---------- */
 async function loadSimple() {
-  const { data: articles, error } = await sb.from('v_articles_stock').select('id,code,libelle,stock_restant,statut,categorie,photo_url').order('categorie').order('libelle');
+  const [{ data: articles, error }, { data: sm }] = await Promise.all([
+    sb.from('v_articles_stock').select('id,code,libelle,stock_restant,statut,categorie,photo_url').order('categorie').order('libelle'),
+    sb.from('mouvements_stock').select('id,article_id,type,date,created_by,created_at').order('date')
+  ]);
   if (error) { document.getElementById('data-warning').style.display='block'; document.getElementById('data-warning').textContent = error.message; return; }
   ARTICLES = articles || [];
+  STOCK_MVTS = sm || [];
   const cats = Array.from(new Set(ARTICLES.map(a => a.categorie).filter(Boolean))).sort();
   const sel = document.getElementById('simple-filter-categorie');
   const current = sel.value;
@@ -1428,16 +1446,20 @@ function renderSimpleList() {
   const q = (document.getElementById('simple-search').value || '').toLowerCase();
   const catFilter = document.getElementById('simple-filter-categorie').value;
   const list = ARTICLES.filter(a => (!q || a.libelle.toLowerCase().includes(q) || a.code.toLowerCase().includes(q)) && (!catFilter || a.categorie === catFilter));
+  const lastMvt = lastMovementByArticle();
   let lastCat = null; let html = '';
   list.forEach(a => {
     const cat = a.categorie || 'Sans catégorie';
     if (cat !== lastCat) { html += `<div style="font-size:12px;font-weight:600;color:var(--text-secondary);margin:14px 0 6px;">${escapeHtml(cat)}</div>`; lastCat = cat; }
+    const lm = lastMvt.get(a.id);
+    const lastByHtml = lm ? `<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">${lm.type==='entree'?'Entrée':'Vente'} par <b>${escapeHtml(lm.created_by||'?')}</b> · ${escapeHtml(lm.date)}</div>` : '';
     html += `
     <div class="simple-card">
       ${a.photo_url ? `<img src="${escapeHtml(a.photo_url)}" alt="" style="width:46px;height:46px;object-fit:cover;border-radius:10px;flex-shrink:0;" />` : ''}
       <div class="info">
         <div class="code">${escapeHtml(a.code)}</div>
         <div class="name">${escapeHtml(a.libelle)}</div>
+        ${lastByHtml}
         <div class="stock">Stock : <b>${a.stock_restant}</b> · ${a.statut}</div>
       </div>
       <div class="simple-actions">
