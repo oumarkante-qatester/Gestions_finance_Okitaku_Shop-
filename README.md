@@ -1,11 +1,15 @@
-# Okita Shop — Gestion des ventes, du stock &amp; de la trésorerie
+# Okitaku Shop — Gestion des ventes, du stock &amp; de la trésorerie
 
-Tableau de bord en ligne pour gérer les ventes, le stock et la trésorerie d'Okita Shop, utilisable en équipe (à distance, en boutique ou en exposition).
+Tableau de bord en ligne pour gérer les ventes, le stock, les fournisseurs et la trésorerie d'Okitaku Shop, utilisable en équipe (à distance, en boutique ou en exposition).
 
 ## Fonctionnalités
 
-- **Stock & ventes** : chaque article a un code, un libellé, un prix de vente. Le stock, les totaux d'achats/ventes et la valeur du stock sont calculés automatiquement à partir des mouvements (entrées = réassorts/achats, sorties = ventes).
-- **Trésorerie** : mouvements généraux non liés à un article (loyer, salaires, transport, autres revenus/dépenses) — visible par les admins uniquement.
+- **Stock & ventes** : chaque article a un code, un libellé, un prix de vente. Le stock, les totaux d'achats/ventes et la valeur du stock sont calculés automatiquement à partir des mouvements (entrées = réassorts/achats, sorties = ventes). Reçu client imprimable après chaque vente.
+- **Approvisionnement** : historique complet de tous les réassorts/achats de stock, toutes articles confondus.
+- **Fournisseurs** : suivi du montant dû à chaque fournisseur, avec historique des factures/dettes et paiements (justificatif photo à l'appui).
+- **Prêts** : prêts à des employés/proches, remboursés ou non, avec suivi du statut.
+- **Trésorerie** : mouvements généraux non liés à un article (loyer, salaires, rémunération, transport, déplacement événement, location stand, nourriture événement, autres revenus/dépenses) — visible par les admins uniquement.
+- **Tableau de bord ventes** : ventes du mois, du mois dernier, de l'année en cours et de l'année précédente, plus un graphique des 12 derniers mois.
 - **Rapport financier à la demande** : choisis une période (7 jours, 30 jours, ce mois, personnalisé) et génère un rapport complet (ventes, dépenses, résultat net, top articles, détail des mouvements), imprimable en PDF.
 - **Équipe & rôles** :
   - **Admin** : accès complet (stock, ventes, trésorerie, rapports, gestion de l'équipe).
