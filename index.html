@@ -224,7 +224,7 @@
   <!-- APP -->
   <div id="app-screen">
     <header class="topbar">
-      <div class="brand" id="brand-wrap"><img id="brand-logo" src="" alt="Logo" style="display:none;height:28px;width:28px;border-radius:6px;object-fit:cover;vertical-align:middle;margin-right:8px;" />Okitaku Shop <span>· Gestion</span></div>
+      <div class="brand" id="brand-wrap"><img id="brand-logo" src="" alt="Logo" style="display:none;height:34px;width:auto;max-width:180px;object-fit:contain;vertical-align:middle;margin-right:8px;" /><span id="brand-text">Okitaku Shop</span> <span>· Gestion</span></div>
       <div class="right">
         <span id="role-badge-wrap"></span>
         <span id="user-email"></span>
@@ -253,6 +253,7 @@
       <!-- SIMPLE MODE (staff) -->
       <section id="simple-screen" style="display:none;">
         <input type="text" class="search-bar" id="simple-search" placeholder="🔍 Rechercher un article (nom ou code)…" />
+        <select id="simple-filter-categorie" class="search-bar" style="padding:10px 14px;"><option value="">Toutes catégories</option></select>
         <div id="simple-list"></div>
       </section>
 
@@ -284,10 +285,15 @@
       <section class="tabpanel" id="tab-approvisionnement">
         <div class="card">
           <div class="toolbar">
-            <div><h3 style="margin:0">Approvisionnement (réassorts &amp; achats de stock)</h3><p class="desc" style="margin:2px 0 0">Historique de toutes les entrées de stock, toutes articles confondus</p></div>
+            <div><h3 style="margin:0">Approvisionnement &amp; mouvements de stock</h3><p class="desc" style="margin:2px 0 0">Historique de tous les mouvements de stock, modifiable ou supprimable en cas d'erreur</p></div>
+            <select id="filter-mvt-type" class="btn-sm">
+              <option value="entree">Entrées (réassorts/achats)</option>
+              <option value="sortie">Sorties (ventes)</option>
+              <option value="">Tous les mouvements</option>
+            </select>
           </div>
           <div class="table-wrap">
-            <table id="tbl-approvisionnement"><thead><tr><th>Date</th><th>Article</th><th class="num">Quantité</th><th class="num">Montant</th><th>Note</th><th>Justificatif</th><th>Par</th></tr></thead><tbody></tbody></table>
+            <table id="tbl-approvisionnement"><thead><tr><th>Date</th><th>Type</th><th>Article</th><th class="num">Quantité</th><th class="num">Montant</th><th>Note</th><th>Justificatif</th><th>Par</th><th></th></tr></thead><tbody></tbody></table>
           </div>
         </div>
       </section>
@@ -296,13 +302,16 @@
       <section class="tabpanel" id="tab-stock">
         <div class="card">
           <div class="toolbar">
-            <div><h3 style="margin:0">Articles &amp; stock</h3><p class="desc" style="margin:2px 0 0">Calculé automatiquement à partir des mouvements</p></div>
-            <button class="btn btn-primary btn-sm" id="btn-new-article">+ Nouvel article</button>
+            <div><h3 style="margin:0">Articles &amp; stock</h3><p class="desc" style="margin:2px 0 0">Calculé automatiquement à partir des mouvements, classé par catégorie</p></div>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <select id="filter-categorie" class="btn-sm"><option value="">Toutes catégories</option></select>
+              <button class="btn btn-primary btn-sm" id="btn-new-article">+ Nouvel article</button>
+            </div>
           </div>
           <div class="table-wrap">
             <table id="tbl-articles">
               <thead><tr>
-                <th>Code</th><th>Libellé</th><th class="num">Entrée</th><th class="num">Sortie</th>
+                <th>Code</th><th>Libellé</th><th>Catégorie</th><th class="num">Entrée</th><th class="num">Sortie</th>
                 <th class="num">Stock</th><th>Statut</th><th class="num">Prix vente</th>
                 <th class="num">Achats</th><th class="num">Ventes</th><th class="num">Valeur stock</th><th></th>
               </tr></thead>
@@ -462,11 +471,28 @@
 
 <dialog id="dlg-article">
   <div class="dialog-body">
-    <h3>Nouvel article</h3>
+    <h3 id="art-title">Nouvel article</h3>
+    <input type="hidden" id="art-id" />
     <div class="field"><label>Code (ex: OKI0040)</label><input id="art-code" /></div>
     <div class="field"><label>Libellé</label><input id="art-libelle" /></div>
+    <div class="field"><label>Catégorie</label><input id="art-categorie" list="art-categorie-list" placeholder="ex: Vêtements" /><datalist id="art-categorie-list"></datalist></div>
     <div class="field"><label>Prix de vente (FCFA)</label><input id="art-prix" type="number" min="0" /></div>
     <div class="dialog-actions"><button class="btn" id="art-cancel">Annuler</button><button class="btn btn-primary" id="art-confirm">Créer</button></div>
+  </div>
+</dialog>
+
+<dialog id="dlg-edit-mouvement">
+  <div class="dialog-body">
+    <h3 id="em-title">Modifier le mouvement</h3>
+    <input type="hidden" id="em-id" />
+    <div class="field"><label>Date</label><input id="em-date" type="date" /></div>
+    <div class="field"><label>Quantité</label><input id="em-qte" type="number" min="1" /></div>
+    <div class="field"><label>Montant (FCFA)</label><input id="em-montant" type="number" min="0" /></div>
+    <div class="field"><label>Note</label><input id="em-note" /></div>
+    <div class="dialog-actions">
+      <button class="btn btn-danger" id="em-delete" style="margin-right:auto;">Supprimer</button>
+      <button class="btn" id="em-cancel">Annuler</button><button class="btn btn-primary" id="em-confirm">Enregistrer</button>
+    </div>
   </div>
 </dialog>
 
@@ -879,31 +905,83 @@ function renderCharts() {
 window.addEventListener('resize', renderCharts);
 
 /* ---------- ARTICLES TABLE (admin) ---------- */
+const DEFAULT_CATEGORIES = ['Vêtements','Accessoires','Objets déco','Papeterie & Manga','Répliques & Armes','Vaisselle','Figurines','Autres'];
+function populateCategoryPickers() {
+  const cats = Array.from(new Set([...DEFAULT_CATEGORIES, ...ARTICLES.map(a => a.categorie).filter(Boolean)])).sort();
+  document.getElementById('art-categorie-list').innerHTML = cats.map(c => `<option value="${escapeHtml(c)}"></option>`).join('');
+  const filterSel = document.getElementById('filter-categorie');
+  const current = filterSel.value;
+  filterSel.innerHTML = '<option value="">Toutes catégories</option>' + cats.filter(c => ARTICLES.some(a=>a.categorie===c)).map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+  filterSel.value = current;
+}
 function renderArticlesTable() {
+  populateCategoryPickers();
+  const filterVal = document.getElementById('filter-categorie').value;
   const tbody = document.querySelector('#tbl-articles tbody');
-  tbody.innerHTML = ARTICLES.map(a => `
+  const sorted = [...ARTICLES].filter(a => !filterVal || a.categorie === filterVal)
+    .sort((a,b) => (a.categorie||'zzz').localeCompare(b.categorie||'zzz') || a.code.localeCompare(b.code));
+  let lastCat = null; let rows = '';
+  sorted.forEach(a => {
+    const cat = a.categorie || 'Sans catégorie';
+    if (cat !== lastCat) { rows += `<tr><td colspan="12" style="background:var(--page);font-weight:600;font-size:12px;color:var(--text-secondary);padding-top:12px;">${escapeHtml(cat)}</td></tr>`; lastCat = cat; }
+    rows += `
     <tr>
-      <td>${escapeHtml(a.code)}</td><td>${escapeHtml(a.libelle)}</td>
+      <td>${escapeHtml(a.code)}</td><td>${escapeHtml(a.libelle)}</td><td>${escapeHtml(a.categorie||'—')}</td>
       <td class="num">${a.entree}</td><td class="num">${a.sortie}</td><td class="num">${a.stock_restant}</td>
       <td><span class="pill ${a.statut==='Vente possible'?'ok':'no'}">${a.statut}</span></td>
       <td class="num">${a.prix_vente!=null ? fmt(a.prix_vente) : '—'}</td>
       <td class="num">${fmt(a.montant_total_achats)}</td><td class="num">${fmt(a.montant_total_ventes)}</td><td class="num">${fmt(a.valeur_stock)}</td>
-      <td><button class="btn btn-sm" data-action="entree" data-id="${a.id}" data-code="${escapeHtml(a.code)}">+ Entrée</button> <button class="btn btn-sm" data-action="sortie" data-id="${a.id}" data-code="${escapeHtml(a.code)}">+ Sortie</button></td>
-    </tr>`).join('');
+      <td style="white-space:nowrap;">
+        <button class="btn btn-sm" data-action="entree" data-id="${a.id}" data-code="${escapeHtml(a.code)}">+ Entrée</button>
+        <button class="btn btn-sm" data-action="sortie" data-id="${a.id}" data-code="${escapeHtml(a.code)}">+ Sortie</button>
+        <button class="btn btn-sm" data-edit-art="${a.id}">✏️</button>
+        <button class="btn btn-sm btn-danger" data-del-art="${a.id}" data-code="${escapeHtml(a.code)}">🗑️</button>
+      </td>
+    </tr>`;
+  });
+  tbody.innerHTML = rows || '<tr><td colspan="12" style="color:var(--text-muted)">Aucun article.</td></tr>';
   tbody.querySelectorAll('button[data-action]').forEach(btn => btn.addEventListener('click', () => openMouvementStockDialog(btn.dataset.id, btn.dataset.action, btn.dataset.code)));
+  tbody.querySelectorAll('button[data-edit-art]').forEach(btn => btn.addEventListener('click', () => openEditArticle(btn.dataset.editArt)));
+  tbody.querySelectorAll('button[data-del-art]').forEach(btn => btn.addEventListener('click', async () => {
+    if (!confirm(`Supprimer l'article ${btn.dataset.code} ? Tout son historique de mouvements sera aussi supprimé. Cette action est irréversible.`)) return;
+    const { error } = await sb.from('articles').delete().eq('id', btn.dataset.delArt);
+    if (error) return alert('Erreur : ' + error.message);
+    await loadAll();
+  }));
 }
+document.getElementById('filter-categorie').addEventListener('change', renderArticlesTable);
 
 document.getElementById('btn-new-article').addEventListener('click', () => {
-  document.getElementById('art-code').value = ''; document.getElementById('art-libelle').value = ''; document.getElementById('art-prix').value = '';
+  document.getElementById('art-title').textContent = 'Nouvel article';
+  document.getElementById('art-id').value = '';
+  document.getElementById('art-code').value = ''; document.getElementById('art-libelle').value = ''; document.getElementById('art-prix').value = ''; document.getElementById('art-categorie').value = '';
+  document.getElementById('art-confirm').textContent = 'Créer';
   document.getElementById('dlg-article').showModal();
 });
+function openEditArticle(id) {
+  const a = ARTICLES.find(x => x.id === id);
+  if (!a) return;
+  document.getElementById('art-title').textContent = 'Modifier — ' + a.code;
+  document.getElementById('art-id').value = a.id;
+  document.getElementById('art-code').value = a.code;
+  document.getElementById('art-libelle').value = a.libelle;
+  document.getElementById('art-prix').value = a.prix_vente != null ? a.prix_vente : '';
+  document.getElementById('art-categorie').value = a.categorie || '';
+  document.getElementById('art-confirm').textContent = 'Enregistrer';
+  document.getElementById('dlg-article').showModal();
+}
 document.getElementById('art-cancel').addEventListener('click', () => document.getElementById('dlg-article').close());
 document.getElementById('art-confirm').addEventListener('click', async () => {
+  const id = document.getElementById('art-id').value;
   const code = document.getElementById('art-code').value.trim();
   const libelle = document.getElementById('art-libelle').value.trim();
   const prix = document.getElementById('art-prix').value;
+  const categorie = document.getElementById('art-categorie').value.trim() || null;
   if (!code || !libelle) return alert('Code et libellé sont requis.');
-  const { error } = await sb.from('articles').insert({ code, libelle, prix_vente: prix ? Number(prix) : null });
+  const payload = { code, libelle, prix_vente: prix ? Number(prix) : null, categorie };
+  const { error } = id
+    ? await sb.from('articles').update(payload).eq('id', id)
+    : await sb.from('articles').insert(payload);
   if (error) return alert('Erreur : ' + error.message);
   document.getElementById('dlg-article').close();
   await loadAll();
@@ -1055,7 +1133,12 @@ async function loadShopSettings() {
   if (error || !data) return;
   SHOP_SETTINGS = data;
   const logoEl = document.getElementById('brand-logo');
-  if (data.logo_url) { logoEl.src = data.logo_url; logoEl.style.display = 'inline-block'; }
+  if (data.logo_url) {
+    logoEl.src = data.logo_url;
+    logoEl.style.display = 'inline-block';
+    const brandText = document.getElementById('brand-text');
+    if (brandText) brandText.style.display = 'none';
+  }
   if (CURRENT_ROLE === 'admin') {
     document.getElementById('settings-email').value = data.email_contact || '';
     document.getElementById('settings-tel').value = data.telephone || '';
@@ -1087,18 +1170,61 @@ document.getElementById('btn-save-settings').addEventListener('click', async () 
   await loadShopSettings();
 });
 
-/* ---------- APPROVISIONNEMENT (admin only) ---------- */
+/* ---------- APPROVISIONNEMENT / MOUVEMENTS DE STOCK (admin only) ---------- */
 function renderApprovisionnementTable() {
-  const rows = STOCK_MVTS.filter(m => m.type === 'entree').sort((a,b)=> b.date.localeCompare(a.date));
+  const typeFilter = document.getElementById('filter-mvt-type').value;
+  const rows = STOCK_MVTS.filter(m => !typeFilter || m.type === typeFilter).sort((a,b)=> b.date.localeCompare(a.date));
   document.querySelector('#tbl-approvisionnement tbody').innerHTML = rows.map(m => `
     <tr>
-      <td>${m.date}</td><td>${m.articles ? escapeHtml(m.articles.code + ' · ' + m.articles.libelle) : ''}</td>
+      <td>${m.date}</td><td><span class="pill ${m.type==='entree'?'ok':'no'}">${m.type==='entree'?'Entrée':'Sortie'}</span></td>
+      <td>${m.articles ? escapeHtml(m.articles.code + ' · ' + m.articles.libelle) : ''}</td>
       <td class="num">${m.quantite}</td><td class="num">${fmt(m.montant)}</td><td>${escapeHtml(m.note||'')}</td>
       <td>${m.justificatif_path ? `<a href="#" target="_blank" data-justificatif="${escapeHtml(m.justificatif_path)}">📎 Voir</a>` : '—'}</td>
       <td>${escapeHtml(m.created_by||'')}</td>
-    </tr>`).join('') || '<tr><td colspan="7" style="color:var(--text-muted)">Aucun approvisionnement enregistré.</td></tr>';
+      <td><button class="btn btn-sm" data-edit-mvt="${m.id}">✏️</button> <button class="btn btn-sm btn-danger" data-del-mvt="${m.id}">🗑️</button></td>
+    </tr>`).join('') || '<tr><td colspan="9" style="color:var(--text-muted)">Aucun mouvement enregistré.</td></tr>';
   attachJustificatifLinks(document.querySelector('#tbl-approvisionnement'));
+  document.querySelectorAll('#tbl-approvisionnement button[data-edit-mvt]').forEach(btn => btn.addEventListener('click', () => openEditMouvement(btn.dataset.editMvt)));
+  document.querySelectorAll('#tbl-approvisionnement button[data-del-mvt]').forEach(btn => btn.addEventListener('click', async () => {
+    if (!confirm('Supprimer ce mouvement ? Le stock et les totaux seront recalculés automatiquement.')) return;
+    const { error } = await sb.from('mouvements_stock').delete().eq('id', btn.dataset.delMvt);
+    if (error) return alert('Erreur : ' + error.message);
+    await loadAll();
+  }));
 }
+document.getElementById('filter-mvt-type').addEventListener('change', renderApprovisionnementTable);
+function openEditMouvement(id) {
+  const m = STOCK_MVTS.find(x => x.id === id);
+  if (!m) return;
+  document.getElementById('em-title').textContent = 'Modifier — ' + (m.articles ? m.articles.code + ' · ' + m.articles.libelle : '');
+  document.getElementById('em-id').value = m.id;
+  document.getElementById('em-date').value = m.date;
+  document.getElementById('em-qte').value = m.quantite;
+  document.getElementById('em-montant').value = m.montant;
+  document.getElementById('em-note').value = m.note || '';
+  document.getElementById('dlg-edit-mouvement').showModal();
+}
+document.getElementById('em-cancel').addEventListener('click', () => document.getElementById('dlg-edit-mouvement').close());
+document.getElementById('em-confirm').addEventListener('click', async () => {
+  const id = document.getElementById('em-id').value;
+  const date = document.getElementById('em-date').value;
+  const quantite = Number(document.getElementById('em-qte').value);
+  const montant = Number(document.getElementById('em-montant').value || 0);
+  const note = document.getElementById('em-note').value.trim() || null;
+  if (!quantite || quantite <= 0) return alert('Quantité invalide.');
+  const { error } = await sb.from('mouvements_stock').update({ date, quantite, montant, note }).eq('id', id);
+  if (error) return alert('Erreur : ' + error.message);
+  document.getElementById('dlg-edit-mouvement').close();
+  await loadAll();
+});
+document.getElementById('em-delete').addEventListener('click', async () => {
+  const id = document.getElementById('em-id').value;
+  if (!confirm('Supprimer ce mouvement ?')) return;
+  const { error } = await sb.from('mouvements_stock').delete().eq('id', id);
+  if (error) return alert('Erreur : ' + error.message);
+  document.getElementById('dlg-edit-mouvement').close();
+  await loadAll();
+});
 
 /* ---------- FOURNISSEURS (admin only) ---------- */
 function renderFournisseursTable() {
@@ -1237,15 +1363,25 @@ document.getElementById('prb-confirm').addEventListener('click', async () => {
 
 /* ---------- SIMPLE MODE (staff) ---------- */
 async function loadSimple() {
-  const { data: articles, error } = await sb.from('v_articles_stock').select('id,code,libelle,stock_restant,statut').order('libelle');
+  const { data: articles, error } = await sb.from('v_articles_stock').select('id,code,libelle,stock_restant,statut,categorie').order('categorie').order('libelle');
   if (error) { document.getElementById('data-warning').style.display='block'; document.getElementById('data-warning').textContent = error.message; return; }
   ARTICLES = articles || [];
+  const cats = Array.from(new Set(ARTICLES.map(a => a.categorie).filter(Boolean))).sort();
+  const sel = document.getElementById('simple-filter-categorie');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">Toutes catégories</option>' + cats.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+  sel.value = current;
   renderSimpleList();
 }
 function renderSimpleList() {
   const q = (document.getElementById('simple-search').value || '').toLowerCase();
-  const list = ARTICLES.filter(a => !q || a.libelle.toLowerCase().includes(q) || a.code.toLowerCase().includes(q));
-  document.getElementById('simple-list').innerHTML = list.map(a => `
+  const catFilter = document.getElementById('simple-filter-categorie').value;
+  const list = ARTICLES.filter(a => (!q || a.libelle.toLowerCase().includes(q) || a.code.toLowerCase().includes(q)) && (!catFilter || a.categorie === catFilter));
+  let lastCat = null; let html = '';
+  list.forEach(a => {
+    const cat = a.categorie || 'Sans catégorie';
+    if (cat !== lastCat) { html += `<div style="font-size:12px;font-weight:600;color:var(--text-secondary);margin:14px 0 6px;">${escapeHtml(cat)}</div>`; lastCat = cat; }
+    html += `
     <div class="simple-card">
       <div class="info">
         <div class="code">${escapeHtml(a.code)}</div>
@@ -1256,11 +1392,14 @@ function renderSimpleList() {
         <button class="btn btn-primary btn-sm" data-sale="${a.id}" data-label="${escapeHtml(a.code + ' · ' + a.libelle)}">Vendre</button>
         <button class="btn btn-sm" data-restock="${a.id}" data-label="${escapeHtml(a.code + ' · ' + a.libelle)}">Réassort</button>
       </div>
-    </div>`).join('') || '<p style="color:var(--text-muted)">Aucun article trouvé.</p>';
+    </div>`;
+  });
+  document.getElementById('simple-list').innerHTML = html || '<p style="color:var(--text-muted)">Aucun article trouvé.</p>';
   document.querySelectorAll('[data-sale]').forEach(btn => btn.addEventListener('click', () => openSimpleDialog('dlg-simple-sale', 'ss', btn.dataset.sale, btn.dataset.label)));
   document.querySelectorAll('[data-restock]').forEach(btn => btn.addEventListener('click', () => openSimpleDialog('dlg-simple-restock', 'sr', btn.dataset.restock, btn.dataset.label)));
 }
 document.getElementById('simple-search').addEventListener('input', renderSimpleList);
+document.getElementById('simple-filter-categorie').addEventListener('change', renderSimpleList);
 function openSimpleDialog(dlgId, prefix, articleId, label) {
   document.getElementById(prefix + '-article-id').value = articleId;
   document.getElementById(prefix === 'ss' ? 'ss-title' : 'sr-title').textContent = (prefix === 'ss' ? 'Vendre — ' : 'Réassort — ') + label;
