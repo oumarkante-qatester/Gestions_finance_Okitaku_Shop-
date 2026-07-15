@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Okita Shop — Gestion &amp; Trésorerie</title>
+<title>Okitaku Shop — Gestion &amp; Trésorerie</title>
 <style>
   :root, .app {
     color-scheme: light;
@@ -145,6 +145,21 @@
     body { background: #fff; }
     .card, .kpi { box-shadow:none; border: 1px solid #ccc; }
   }
+  body.printing-receipt > *:not(#receipt-overlay) { display:none !important; }
+  #receipt-overlay { display:none; }
+  body.printing-receipt #receipt-overlay { display:flex !important; position:fixed; inset:0; background:#fff; z-index:9999; align-items:flex-start; justify-content:center; padding:20px; }
+  .receipt-paper { width: 320px; font-family: system-ui, sans-serif; color:#0b0b0b; }
+  .receipt-paper .r-logo { display:block; height:40px; margin:0 auto 8px; }
+  .receipt-paper h2 { text-align:center; margin:0 0 2px; font-size:16px; }
+  .receipt-paper .r-sub { text-align:center; font-size:11px; color:#555; margin-bottom:10px; }
+  .receipt-paper table { width:100%; border-collapse:collapse; font-size:13px; margin:10px 0; }
+  .receipt-paper td { padding:4px 0; }
+  .receipt-paper .r-total { font-weight:700; font-size:15px; border-top:1px dashed #999; padding-top:8px; margin-top:8px; }
+  .receipt-paper .r-foot { text-align:center; font-size:11px; color:#555; margin-top:14px; }
+  @media screen { #receipt-overlay.preview-open { display:flex !important; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center; }
+    #receipt-overlay.preview-open .receipt-paper { background:#fff; padding:24px; border-radius:10px; }
+    #receipt-overlay.preview-open .receipt-actions { display:flex; gap:8px; justify-content:center; margin-top:14px; }
+  }
 </style>
 </head>
 <body>
@@ -152,8 +167,50 @@
 
   <!-- LOGIN -->
   <div id="login-screen">
+    <div style="display:flex;flex-direction:column;align-items:center;">
+    <svg width="300" height="120" viewBox="0 0 300 120" style="margin-bottom:-8px;" aria-hidden="true">
+      <defs>
+        <radialGradient id="glowGrad" cx="50%" cy="55%" r="60%">
+          <stop offset="0%" stop-color="#2a78d6" stop-opacity="0.14"/>
+          <stop offset="100%" stop-color="#2a78d6" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <circle cx="150" cy="62" r="58" fill="url(#glowGrad)"/>
+      <!-- speed lines -->
+      <g stroke="#c3c2b7" stroke-width="2" stroke-linecap="round" opacity="0.6">
+        <line x1="8" y1="30" x2="34" y2="24"/><line x1="4" y1="46" x2="32" y2="42"/><line x1="10" y1="62" x2="36" y2="60"/>
+        <line x1="292" y1="30" x2="266" y2="24"/><line x1="296" y1="46" x2="268" y2="42"/><line x1="290" y1="62" x2="264" y2="60"/>
+      </g>
+      <!-- treasure chest -->
+      <g transform="translate(128,78)">
+        <rect x="0" y="10" width="44" height="24" rx="3" fill="#eb6834"/>
+        <path d="M0 10 Q22 -8 44 10 L44 16 Q22 2 0 16 Z" fill="#d95926"/>
+        <rect x="18" y="14" width="8" height="8" rx="1.5" fill="#fcfcfb" opacity="0.85"/>
+        <circle cx="8" cy="2" r="2" fill="#eda100"/>
+        <circle cx="36" cy="0" r="2.5" fill="#eda100"/>
+        <circle cx="22" cy="-6" r="2" fill="#eda100"/>
+      </g>
+      <!-- ninja silhouette (left) -->
+      <g transform="translate(64,18)">
+        <circle cx="18" cy="14" r="12" fill="#2a78d6"/>
+        <path d="M6 10 Q18 -2 30 10 L30 14 Q18 6 6 14 Z" fill="#184f95"/>
+        <path d="M28 10 Q40 12 46 22" stroke="#184f95" stroke-width="4" fill="none" stroke-linecap="round"/>
+        <path d="M6 10 Q-6 14 -10 26" stroke="#184f95" stroke-width="4" fill="none" stroke-linecap="round"/>
+        <path d="M10 26 L26 26 L32 66 L20 66 L18 46 L16 66 L4 66 Z" fill="#2a78d6"/>
+        <line x1="30" y1="34" x2="54" y2="16" stroke="#898781" stroke-width="3" stroke-linecap="round"/>
+      </g>
+      <!-- pirate captain silhouette (right) -->
+      <g transform="translate(196,18)">
+        <ellipse cx="18" cy="10" rx="26" ry="7" fill="#0b0b0b"/>
+        <path d="M2 10 Q18 -6 34 10 Q18 4 2 10 Z" fill="#0b0b0b"/>
+        <circle cx="18" cy="18" r="10" fill="#eb6834"/>
+        <path d="M4 28 Q18 20 32 28 L36 66 L0 66 Z" fill="#e34948"/>
+        <path d="M4 28 Q-4 40 2 50" stroke="#d03b3b" stroke-width="4" fill="none" stroke-linecap="round"/>
+        <path d="M32 28 Q40 40 34 50" stroke="#d03b3b" stroke-width="4" fill="none" stroke-linecap="round"/>
+      </g>
+    </svg>
     <div class="login-card">
-      <h1>Okita Shop</h1>
+      <h1>Okitaku Shop</h1>
       <p class="sub">Ventes, stock &amp; trésorerie — accès équipe</p>
       <div class="field"><label for="email">Email</label><input id="email" type="email" placeholder="toi@exemple.com" autocomplete="username" /></div>
       <div class="field"><label for="password">Mot de passe</label><input id="password" type="password" placeholder="••••••••" autocomplete="current-password" /></div>
@@ -161,12 +218,13 @@
       <div class="login-msg" id="login-msg"></div>
       <div class="login-toggle">Pas encore de compte ? <button id="btn-show-signup">Créer un compte</button></div>
     </div>
+    </div>
   </div>
 
   <!-- APP -->
   <div id="app-screen">
     <header class="topbar">
-      <div class="brand">Okita Shop <span>· Gestion</span></div>
+      <div class="brand" id="brand-wrap"><img id="brand-logo" src="" alt="Logo" style="display:none;height:28px;width:28px;border-radius:6px;object-fit:cover;vertical-align:middle;margin-right:8px;" />Okitaku Shop <span>· Gestion</span></div>
       <div class="right">
         <span id="role-badge-wrap"></span>
         <span id="user-email"></span>
@@ -180,13 +238,16 @@
       <button data-tab="stock">Stock &amp; Ventes</button>
       <button data-tab="tresorerie">Trésorerie</button>
       <button data-tab="rapport">Rapport financier</button>
+      <button data-tab="approvisionnement">Approvisionnement</button>
+      <button data-tab="fournisseurs">Fournisseurs</button>
+      <button data-tab="prets">Prêts</button>
       <button data-tab="equipe">Équipe</button>
     </nav>
 
     <main id="main-el">
       <div class="banner" id="data-warning" style="display:none;"></div>
       <div class="banner" id="not-authorized" style="display:none;">
-        <b>Compte non reconnu.</b> Ton adresse email n'est pas encore ajoutée à l'équipe Okita Shop. Demande à l'administrateur de t'ajouter depuis l'onglet « Équipe ».
+        <b>Compte non reconnu.</b> Ton adresse email n'est pas encore ajoutée à l'équipe Okitaku Shop. Demande à l'administrateur de t'ajouter depuis l'onglet « Équipe ».
       </div>
 
       <!-- SIMPLE MODE (staff) -->
@@ -203,9 +264,31 @@
           <div class="kpi"><div class="label">Total achats &amp; dépenses</div><div class="value" id="kpi-depenses">—</div></div>
           <div class="kpi"><div class="label">Valeur du stock actuel</div><div class="value" id="kpi-stock">—</div></div>
         </div>
+        <div class="grid-kpi">
+          <div class="kpi"><div class="label">Ventes ce mois-ci</div><div class="value good" id="kpi-ventes-mois">—</div></div>
+          <div class="kpi"><div class="label">Ventes mois dernier</div><div class="value" id="kpi-ventes-mois-dernier">—</div></div>
+          <div class="kpi"><div class="label">Ventes cette année</div><div class="value good" id="kpi-ventes-annee">—</div></div>
+          <div class="kpi"><div class="label">Ventes année dernière</div><div class="value" id="kpi-ventes-annee-derniere">—</div></div>
+        </div>
         <div class="grid-charts">
           <div class="card"><h3>Trésorerie cumulée dans le temps</h3><p class="desc">Somme des entrées moins sorties, jour après jour</p><div id="chart-cashflow"></div></div>
           <div class="card"><h3>Top articles par ventes</h3><p class="desc">Chiffre d'affaires par article</p><div id="chart-top-articles"></div></div>
+        </div>
+        <div class="card">
+          <h3>Ventes par mois (12 derniers mois)</h3><p class="desc">Total vendu chaque mois, toutes sources confondues</p>
+          <div id="chart-monthly-sales"></div>
+        </div>
+      </section>
+
+      <!-- APPROVISIONNEMENT -->
+      <section class="tabpanel" id="tab-approvisionnement">
+        <div class="card">
+          <div class="toolbar">
+            <div><h3 style="margin:0">Approvisionnement (réassorts &amp; achats de stock)</h3><p class="desc" style="margin:2px 0 0">Historique de toutes les entrées de stock, toutes articles confondus</p></div>
+          </div>
+          <div class="table-wrap">
+            <table id="tbl-approvisionnement"><thead><tr><th>Date</th><th>Article</th><th class="num">Quantité</th><th class="num">Montant</th><th>Note</th><th>Justificatif</th><th>Par</th></tr></thead><tbody></tbody></table>
+          </div>
         </div>
       </section>
 
@@ -276,8 +359,62 @@
         </div>
       </section>
 
+      <!-- FOURNISSEURS -->
+      <section class="tabpanel" id="tab-fournisseurs">
+        <div class="grid-kpi" style="grid-template-columns: 1fr;">
+          <div class="kpi"><div class="label">Total dû aux fournisseurs</div><div class="value bad" id="kpi-fournisseurs-du">—</div></div>
+        </div>
+        <div class="card">
+          <div class="toolbar">
+            <div><h3 style="margin:0">Fournisseurs</h3><p class="desc" style="margin:2px 0 0">Suivi de ce que tu dois à chaque fournisseur. Payer un fournisseur enregistre automatiquement une sortie de trésorerie.</p></div>
+            <button class="btn btn-primary btn-sm" id="btn-new-fournisseur">+ Nouveau fournisseur</button>
+          </div>
+          <div class="table-wrap">
+            <table id="tbl-fournisseurs"><thead><tr><th>Nom</th><th>Contact</th><th>Articles fournis</th><th class="num">Montant dû</th><th></th></tr></thead><tbody></tbody></table>
+          </div>
+        </div>
+        <div class="card" style="margin-top:14px;">
+          <h3 style="margin-top:0">Factures &amp; justificatifs fournisseurs</h3>
+          <p class="desc">Historique de toutes les dettes et paiements enregistrés, avec la facture/capture jointe si fournie.</p>
+          <div class="table-wrap">
+            <table id="tbl-fournisseur-factures"><thead><tr><th>Date</th><th>Fournisseur</th><th>Type</th><th class="num">Montant</th><th>Justificatif</th></tr></thead><tbody></tbody></table>
+          </div>
+        </div>
+      </section>
+
+      <!-- PRETS -->
+      <section class="tabpanel" id="tab-prets">
+        <div class="grid-kpi" style="grid-template-columns: 1fr;">
+          <div class="kpi"><div class="label">Total prêts en cours (non remboursés)</div><div class="value bad" id="kpi-prets-encours">—</div></div>
+        </div>
+        <div class="card">
+          <div class="toolbar">
+            <div><h3 style="margin:0">Prêts accordés</h3><p class="desc" style="margin:2px 0 0">Prêts à des employés/proches. Un prêt accordé enregistre une sortie de trésorerie ; un remboursement enregistre une entrée.</p></div>
+            <button class="btn btn-primary btn-sm" id="btn-new-pret">+ Nouveau prêt</button>
+          </div>
+          <div class="table-wrap">
+            <table id="tbl-prets"><thead><tr><th>Date</th><th>Bénéficiaire</th><th class="num">Montant</th><th class="num">Remboursé</th><th>Statut</th><th></th></tr></thead><tbody></tbody></table>
+          </div>
+        </div>
+      </section>
+
       <!-- EQUIPE -->
       <section class="tabpanel" id="tab-equipe">
+        <div class="card" style="margin-bottom:14px;">
+          <h3 style="margin-top:0">Informations de la boutique</h3>
+          <p class="desc">Logo et coordonnées affichés sur le tableau de bord.</p>
+          <div class="field"><label>Logo</label>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <img id="settings-logo-preview" src="" alt="" style="display:none;height:48px;width:48px;border-radius:8px;object-fit:cover;" />
+              <input id="settings-logo-file" type="file" accept="image/*" />
+            </div>
+          </div>
+          <div class="field"><label>Email de contact</label><input id="settings-email" type="email" /></div>
+          <div class="field"><label>Téléphone / Wave Business</label><input id="settings-tel" /></div>
+          <div class="field"><label>Instagram</label><input id="settings-instagram" placeholder="@okitakushop" /></div>
+          <button class="btn btn-primary btn-sm" id="btn-save-settings">Enregistrer</button>
+          <span class="login-msg" id="settings-msg"></span>
+        </div>
         <div class="card">
           <div class="toolbar">
             <div><h3 style="margin:0">Membres de l'équipe</h3><p class="desc" style="margin:2px 0 0">« Vendeur » peut ajouter des ventes/stock, sans voir la trésorerie ni les rapports. « Admin » a accès complet.</p></div>
@@ -290,7 +427,25 @@
         </div>
       </section>
     </main>
-    <footer class="note">Connecté à la base de données de Okita Shop — les données sont enregistrées immédiatement.</footer>
+    <footer class="note">Connecté à la base de données de Okitaku Shop — les données sont enregistrées immédiatement.</footer>
+  </div>
+</div>
+
+<div id="receipt-overlay">
+  <div class="receipt-paper" id="receipt-paper">
+    <img class="r-logo" id="receipt-logo" src="" alt="" style="display:none;" />
+    <h2 id="receipt-shop-name">Okitaku Shop</h2>
+    <div class="r-sub" id="receipt-contact"></div>
+    <div class="r-sub" id="receipt-date"></div>
+    <table>
+      <tr><td id="receipt-article"></td><td class="num" style="text-align:right" id="receipt-qte"></td></tr>
+    </table>
+    <div class="r-total">Total : <span id="receipt-total"></span></div>
+    <div class="r-foot">Merci pour votre achat !</div>
+    <div class="receipt-actions no-print">
+      <button class="btn btn-primary btn-sm" id="receipt-print-btn">🖨️ Imprimer</button>
+      <button class="btn btn-sm" id="receipt-close-btn">Fermer</button>
+    </div>
   </div>
 </div>
 
@@ -338,7 +493,7 @@
     <div class="field"><label>Type</label><select id="mt-type"><option value="entree">Entrée (revenu)</option><option value="sortie">Sortie (dépense)</option></select></div>
     <div class="field"><label>Date</label><input id="mt-date" type="date" /></div>
     <div class="field"><label>Catégorie</label>
-      <select id="mt-categorie"><option>Loyer</option><option>Salaires</option><option>Transport</option><option>Achat fournitures</option><option>Autre revenu</option><option>Autre dépense</option></select>
+      <select id="mt-categorie"><option>Loyer</option><option>Salaires</option><option>Rémunération</option><option>Transport</option><option>Déplacement (événement)</option><option>Location stand</option><option>Nourriture (événement)</option><option>Achat fournitures</option><option>Autre revenu</option><option>Autre dépense</option></select>
     </div>
     <div class="field"><label>Description</label><input id="mt-description" /></div>
     <div class="field"><label>Montant (FCFA)</label><input id="mt-montant" type="number" min="1" /></div>
@@ -357,6 +512,48 @@
     <div class="field"><label>Email</label><input id="mb-email" type="email" /></div>
     <div class="field"><label>Rôle</label><select id="mb-role"><option value="staff">Vendeur (stock &amp; ventes uniquement)</option><option value="admin">Admin (accès complet)</option></select></div>
     <div class="dialog-actions"><button class="btn" id="mb-cancel">Annuler</button><button class="btn btn-primary" id="mb-confirm">Ajouter</button></div>
+  </div>
+</dialog>
+
+<dialog id="dlg-fournisseur">
+  <div class="dialog-body">
+    <h3>Nouveau fournisseur</h3>
+    <div class="field"><label>Nom</label><input id="fr-nom" /></div>
+    <div class="field"><label>Téléphone</label><input id="fr-tel" /></div>
+    <div class="field"><label>Email</label><input id="fr-email" type="email" /></div>
+    <div class="field"><label>Articles fournis</label><input id="fr-articles" placeholder="ex: Katanas, kimonos" /></div>
+    <div class="field"><label>Montant déjà dû (optionnel)</label><input id="fr-montant" type="number" min="0" value="0" /></div>
+    <div class="dialog-actions"><button class="btn" id="fr-cancel">Annuler</button><button class="btn btn-primary" id="fr-confirm">Créer</button></div>
+  </div>
+</dialog>
+
+<dialog id="dlg-fournisseur-action">
+  <div class="dialog-body">
+    <h3 id="fa-title">Fournisseur</h3>
+    <input type="hidden" id="fa-id" /><input type="hidden" id="fa-mode" />
+    <div class="field"><label id="fa-montant-label">Montant (FCFA)</label><input id="fa-montant" type="number" min="1" /></div>
+    <div class="field" id="fa-file-wrap"><label id="fa-file-label">📎 Facture / justificatif (optionnel)</label><input id="fa-file" type="file" accept="image/*" capture="environment" /></div>
+    <div class="dialog-actions"><button class="btn" id="fa-cancel">Annuler</button><button class="btn btn-primary" id="fa-confirm">Confirmer</button></div>
+  </div>
+</dialog>
+
+<dialog id="dlg-pret">
+  <div class="dialog-body">
+    <h3>Nouveau prêt</h3>
+    <div class="field"><label>Bénéficiaire (nom)</label><input id="pr-beneficiaire" /></div>
+    <div class="field"><label>Montant prêté (FCFA)</label><input id="pr-montant" type="number" min="1" /></div>
+    <div class="field"><label>Date</label><input id="pr-date" type="date" /></div>
+    <div class="field"><label>Note (optionnel)</label><input id="pr-note" /></div>
+    <div class="dialog-actions"><button class="btn" id="pr-cancel">Annuler</button><button class="btn btn-primary" id="pr-confirm">Enregistrer</button></div>
+  </div>
+</dialog>
+
+<dialog id="dlg-pret-remb">
+  <div class="dialog-body">
+    <h3 id="prb-title">Remboursement</h3>
+    <input type="hidden" id="prb-id" />
+    <div class="field"><label>Montant remboursé maintenant (FCFA)</label><input id="prb-montant" type="number" min="1" /></div>
+    <div class="dialog-actions"><button class="btn" id="prb-cancel">Annuler</button><button class="btn btn-primary" id="prb-confirm">Confirmer</button></div>
   </div>
 </dialog>
 
@@ -416,7 +613,7 @@ document.getElementById('btn-theme').addEventListener('click', () => {
 /* ---------- STATE ---------- */
 let CURRENT_ROLE = null;
 let CURRENT_EMAIL = null;
-let ARTICLES = [], STOCK_MVTS = [], CASH_MVTS = [], TEAM = [];
+let ARTICLES = [], STOCK_MVTS = [], CASH_MVTS = [], TEAM = [], FOURNISSEURS = [], PRETS = [], SHOP_SETTINGS = null, FOURNISSEUR_FACTURES = [];
 
 /* ---------- AUTH ---------- */
 const loginScreen = document.getElementById('login-screen');
@@ -474,6 +671,7 @@ async function boot() {
   CURRENT_ROLE = me.role;
   const badgeWrap = document.getElementById('role-badge-wrap');
   badgeWrap.innerHTML = `<span class="pill role-${CURRENT_ROLE}">${CURRENT_ROLE === 'admin' ? 'Admin' : 'Vendeur'}</span>`;
+  await loadShopSettings();
 
   if (CURRENT_ROLE === 'admin') {
     document.getElementById('nav-tabs').style.display = 'flex';
@@ -514,6 +712,29 @@ async function justificatifLink(path) {
   if (error || !data) return '';
   return data.signedUrl;
 }
+/* ---------- RECU / FACTURE CLIENT ---------- */
+function showReceipt({ articleLabel, qte, montant }) {
+  document.getElementById('receipt-shop-name').textContent = 'Okitaku Shop';
+  const logo = document.getElementById('receipt-logo');
+  if (SHOP_SETTINGS && SHOP_SETTINGS.logo_url) { logo.src = SHOP_SETTINGS.logo_url; logo.style.display = 'block'; }
+  else { logo.style.display = 'none'; }
+  const contactBits = [];
+  if (SHOP_SETTINGS && SHOP_SETTINGS.telephone) contactBits.push(SHOP_SETTINGS.telephone);
+  if (SHOP_SETTINGS && SHOP_SETTINGS.email_contact) contactBits.push(SHOP_SETTINGS.email_contact);
+  document.getElementById('receipt-contact').textContent = contactBits.join(' · ');
+  document.getElementById('receipt-date').textContent = new Date().toLocaleString('fr-FR');
+  document.getElementById('receipt-article').textContent = `${articleLabel} × ${qte}`;
+  document.getElementById('receipt-qte').textContent = '';
+  document.getElementById('receipt-total').textContent = fmt(montant);
+  document.getElementById('receipt-overlay').classList.add('preview-open');
+}
+document.getElementById('receipt-close-btn').addEventListener('click', () => document.getElementById('receipt-overlay').classList.remove('preview-open'));
+document.getElementById('receipt-print-btn').addEventListener('click', () => {
+  document.body.classList.add('printing-receipt');
+  window.print();
+  setTimeout(() => document.body.classList.remove('printing-receipt'), 300);
+});
+
 function attachJustificatifLinks(root) {
   root.querySelectorAll('a[data-justificatif]').forEach(async a => {
     const url = await justificatifLink(a.dataset.justificatif);
@@ -524,10 +745,13 @@ function attachJustificatifLinks(root) {
 
 /* ---------- FULL LOAD (admin) ---------- */
 async function loadAll() {
-  const [{data: articles, error: e1}, {data: sm, error: e2}, {data: cm, error: e3}] = await Promise.all([
+  const [{data: articles, error: e1}, {data: sm, error: e2}, {data: cm, error: e3}, {data: fr, error: e4}, {data: pr, error: e5}, {data: ff, error: e6}] = await Promise.all([
     sb.from('v_articles_stock').select('*').order('code'),
     sb.from('mouvements_stock').select('id,date,type,quantite,montant,note,article_id,created_by,justificatif_path,articles(code,libelle)').order('date'),
-    sb.from('mouvements_tresorerie').select('*').order('date')
+    sb.from('mouvements_tresorerie').select('*').order('date'),
+    sb.from('fournisseurs').select('*').order('nom'),
+    sb.from('prets').select('*').order('date', {ascending:false}),
+    sb.from('fournisseur_factures').select('*,fournisseurs(nom)').order('date', {ascending:false})
   ]);
   if (e1 || e2 || e3) {
     document.getElementById('data-warning').style.display = 'block';
@@ -535,7 +759,9 @@ async function loadAll() {
     return;
   }
   ARTICLES = articles || []; STOCK_MVTS = sm || []; CASH_MVTS = cm || [];
+  FOURNISSEURS = fr || []; PRETS = pr || []; FOURNISSEUR_FACTURES = ff || [];
   renderArticlesTable(); renderTresorerieTable(); renderKPIs(); renderCharts(); checkDataAnomalies();
+  renderFournisseursTable(); renderPretsTable(); renderApprovisionnementTable(); renderFournisseurFacturesTable();
   const today = todayStr();
   document.getElementById('rep-from').value = today.slice(0,8) + '01';
   document.getElementById('rep-to').value = today;
@@ -566,6 +792,37 @@ function renderKPIs() {
   document.getElementById('kpi-ventes').textContent = fmt(t.ventes);
   document.getElementById('kpi-depenses').textContent = fmt(t.achats);
   document.getElementById('kpi-stock').textContent = fmt(t.stockVal);
+
+  const salesInRange = (fromStr, toStr) =>
+    STOCK_MVTS.filter(m => m.type==='sortie' && m.date >= fromStr && m.date <= toStr).reduce((s,m)=>s+Number(m.montant),0)
+    + CASH_MVTS.filter(m => m.type==='entree' && m.date >= fromStr && m.date <= toStr).reduce((s,m)=>s+Number(m.montant),0);
+  const now = new Date();
+  const y = now.getFullYear(), mo = now.getMonth();
+  const pad2 = n => String(n).padStart(2,'0');
+  const monthStart = (yy,mm) => `${yy}-${pad2(mm+1)}-01`;
+  const monthEnd = (yy,mm) => { const d = new Date(yy, mm+1, 0); return `${yy}-${pad2(mm+1)}-${pad2(d.getDate())}`; };
+  const thisMonth = salesInRange(monthStart(y,mo), monthEnd(y,mo));
+  const lastMonthY = mo === 0 ? y-1 : y, lastMonthM = mo === 0 ? 11 : mo-1;
+  const lastMonth = salesInRange(monthStart(lastMonthY,lastMonthM), monthEnd(lastMonthY,lastMonthM));
+  const thisYear = salesInRange(`${y}-01-01`, `${y}-12-31`);
+  const lastYear = salesInRange(`${y-1}-01-01`, `${y-1}-12-31`);
+  document.getElementById('kpi-ventes-mois').textContent = fmt(thisMonth);
+  document.getElementById('kpi-ventes-mois-dernier').textContent = fmt(lastMonth);
+  document.getElementById('kpi-ventes-annee').textContent = fmt(thisYear);
+  document.getElementById('kpi-ventes-annee-derniere').textContent = fmt(lastYear);
+}
+function monthlySalesSeries() {
+  const now = new Date(); const months = [];
+  for (let i = 11; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const y = d.getFullYear(), m = d.getMonth();
+    const from = `${y}-${String(m+1).padStart(2,'0')}-01`;
+    const to = new Date(y, m+1, 0); const toStr = `${y}-${String(m+1).padStart(2,'0')}-${String(to.getDate()).padStart(2,'0')}`;
+    const val = STOCK_MVTS.filter(mv => mv.type==='sortie' && mv.date>=from && mv.date<=toStr).reduce((s,mv)=>s+Number(mv.montant),0)
+      + CASH_MVTS.filter(mv => mv.type==='entree' && mv.date>=from && mv.date<=toStr).reduce((s,mv)=>s+Number(mv.montant),0);
+    months.push({ label: d.toLocaleDateString('fr-FR', {month:'short', year:'2-digit'}), value: val });
+  }
+  return months;
 }
 
 /* ---------- CHARTS ---------- */
@@ -617,6 +874,7 @@ function renderCharts() {
   renderLineChart(document.getElementById('chart-cashflow'), dailyNetSeries(), color);
   const top = [...ARTICLES].sort((a,b)=>Number(b.montant_total_ventes)-Number(a.montant_total_ventes)).filter(a=>Number(a.montant_total_ventes)>0).slice(0,8).map(a=>({label:`${a.code} · ${a.libelle}`, value:Number(a.montant_total_ventes)}));
   renderBarChart(document.getElementById('chart-top-articles'), top, color);
+  renderBarChart(document.getElementById('chart-monthly-sales'), monthlySalesSeries(), color);
 }
 window.addEventListener('resize', renderCharts);
 
@@ -676,6 +934,10 @@ document.getElementById('ms-confirm').addEventListener('click', async () => {
   btn.disabled = false; btn.textContent = 'Enregistrer';
   if (error) return alert('Erreur : ' + error.message);
   document.getElementById('dlg-mouvement-stock').close();
+  if (type === 'sortie') {
+    const artLabel = document.getElementById('ms-title').textContent.replace('Sortie / vente — ', '');
+    showReceipt({ articleLabel: artLabel, qte: quantite, montant });
+  }
   await (CURRENT_ROLE === 'admin' ? loadAll() : loadSimple());
 });
 
@@ -787,6 +1049,192 @@ document.getElementById('mb-confirm').addEventListener('click', async () => {
   renderTeamTable();
 });
 
+/* ---------- SHOP SETTINGS (logo + coordonnées) ---------- */
+async function loadShopSettings() {
+  const { data, error } = await sb.from('shop_settings').select('*').eq('id', true).maybeSingle();
+  if (error || !data) return;
+  SHOP_SETTINGS = data;
+  const logoEl = document.getElementById('brand-logo');
+  if (data.logo_url) { logoEl.src = data.logo_url; logoEl.style.display = 'inline-block'; }
+  if (CURRENT_ROLE === 'admin') {
+    document.getElementById('settings-email').value = data.email_contact || '';
+    document.getElementById('settings-tel').value = data.telephone || '';
+    document.getElementById('settings-instagram').value = data.instagram || '';
+    const preview = document.getElementById('settings-logo-preview');
+    if (data.logo_url) { preview.src = data.logo_url; preview.style.display = 'inline-block'; }
+  }
+}
+document.getElementById('btn-save-settings').addEventListener('click', async () => {
+  const msg = document.getElementById('settings-msg'); msg.className = 'login-msg'; msg.textContent = 'Enregistrement…';
+  const file = document.getElementById('settings-logo-file').files[0];
+  let logo_url = SHOP_SETTINGS ? SHOP_SETTINGS.logo_url : null;
+  if (file) {
+    const path = `logo-${Date.now()}-${file.name}`.replace(/\s+/g, '_');
+    const { error: upErr } = await sb.storage.from('logo').upload(path, file, { upsert: true });
+    if (upErr) { msg.className = 'login-msg error'; msg.textContent = upErr.message; return; }
+    logo_url = sb.storage.from('logo').getPublicUrl(path).data.publicUrl;
+  }
+  const payload = {
+    id: true,
+    logo_url,
+    email_contact: document.getElementById('settings-email').value.trim() || null,
+    telephone: document.getElementById('settings-tel').value.trim() || null,
+    instagram: document.getElementById('settings-instagram').value.trim() || null,
+  };
+  const { error } = await sb.from('shop_settings').upsert(payload);
+  if (error) { msg.className = 'login-msg error'; msg.textContent = error.message; return; }
+  msg.className = 'login-msg ok'; msg.textContent = 'Enregistré ✓';
+  await loadShopSettings();
+});
+
+/* ---------- APPROVISIONNEMENT (admin only) ---------- */
+function renderApprovisionnementTable() {
+  const rows = STOCK_MVTS.filter(m => m.type === 'entree').sort((a,b)=> b.date.localeCompare(a.date));
+  document.querySelector('#tbl-approvisionnement tbody').innerHTML = rows.map(m => `
+    <tr>
+      <td>${m.date}</td><td>${m.articles ? escapeHtml(m.articles.code + ' · ' + m.articles.libelle) : ''}</td>
+      <td class="num">${m.quantite}</td><td class="num">${fmt(m.montant)}</td><td>${escapeHtml(m.note||'')}</td>
+      <td>${m.justificatif_path ? `<a href="#" target="_blank" data-justificatif="${escapeHtml(m.justificatif_path)}">📎 Voir</a>` : '—'}</td>
+      <td>${escapeHtml(m.created_by||'')}</td>
+    </tr>`).join('') || '<tr><td colspan="7" style="color:var(--text-muted)">Aucun approvisionnement enregistré.</td></tr>';
+  attachJustificatifLinks(document.querySelector('#tbl-approvisionnement'));
+}
+
+/* ---------- FOURNISSEURS (admin only) ---------- */
+function renderFournisseursTable() {
+  const totalDu = FOURNISSEURS.reduce((s,f) => s + Number(f.montant_du||0), 0);
+  document.getElementById('kpi-fournisseurs-du').textContent = fmt(totalDu);
+  document.querySelector('#tbl-fournisseurs tbody').innerHTML = FOURNISSEURS.map(f => `
+    <tr>
+      <td>${escapeHtml(f.nom)}</td>
+      <td>${escapeHtml(f.telephone||'')}${f.telephone && f.email ? ' · ' : ''}${escapeHtml(f.email||'')}</td>
+      <td>${escapeHtml(f.articles_fournis||'')}</td>
+      <td class="num">${fmt(f.montant_du)}</td>
+      <td><button class="btn btn-sm" data-fa="dette" data-id="${f.id}" data-nom="${escapeHtml(f.nom)}">+ Dette</button> <button class="btn btn-sm btn-primary" data-fa="payer" data-id="${f.id}" data-nom="${escapeHtml(f.nom)}">Payer</button></td>
+    </tr>`).join('') || '<tr><td colspan="5" style="color:var(--text-muted)">Aucun fournisseur pour le moment.</td></tr>';
+  document.querySelectorAll('#tbl-fournisseurs button[data-fa]').forEach(btn => btn.addEventListener('click', () => openFournisseurAction(btn.dataset.id, btn.dataset.fa, btn.dataset.nom)));
+}
+document.getElementById('btn-new-fournisseur').addEventListener('click', () => {
+  ['fr-nom','fr-tel','fr-email','fr-articles'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('fr-montant').value = 0;
+  document.getElementById('dlg-fournisseur').showModal();
+});
+document.getElementById('fr-cancel').addEventListener('click', () => document.getElementById('dlg-fournisseur').close());
+document.getElementById('fr-confirm').addEventListener('click', async () => {
+  const nom = document.getElementById('fr-nom').value.trim();
+  if (!nom) return alert('Le nom est requis.');
+  const { error } = await sb.from('fournisseurs').insert({
+    nom,
+    telephone: document.getElementById('fr-tel').value.trim() || null,
+    email: document.getElementById('fr-email').value.trim() || null,
+    articles_fournis: document.getElementById('fr-articles').value.trim() || null,
+    montant_du: Number(document.getElementById('fr-montant').value || 0)
+  });
+  if (error) return alert('Erreur : ' + error.message);
+  document.getElementById('dlg-fournisseur').close();
+  await loadAll();
+});
+function openFournisseurAction(id, mode, nom) {
+  document.getElementById('fa-id').value = id;
+  document.getElementById('fa-mode').value = mode;
+  document.getElementById('fa-title').textContent = (mode === 'payer' ? 'Payer — ' : 'Ajouter une dette — ') + nom;
+  document.getElementById('fa-montant-label').textContent = mode === 'payer' ? 'Montant payé (FCFA)' : 'Montant de la nouvelle dette (FCFA)';
+  document.getElementById('fa-file-label').textContent = mode === 'payer' ? '📎 Preuve de paiement (optionnel)' : '📎 Facture reçue (optionnel)';
+  document.getElementById('fa-montant').value = '';
+  document.getElementById('fa-file').value = '';
+  document.getElementById('dlg-fournisseur-action').showModal();
+}
+document.getElementById('fa-cancel').addEventListener('click', () => document.getElementById('dlg-fournisseur-action').close());
+document.getElementById('fa-confirm').addEventListener('click', async () => {
+  const id = document.getElementById('fa-id').value;
+  const mode = document.getElementById('fa-mode').value;
+  const montant = Number(document.getElementById('fa-montant').value);
+  if (!montant || montant <= 0) return alert('Montant invalide.');
+  const f = FOURNISSEURS.find(x => x.id === id);
+  if (!f) return;
+  const btn = document.getElementById('fa-confirm'); btn.disabled = true;
+  const file = document.getElementById('fa-file').files[0];
+  const justificatif_path = await uploadJustificatif(file);
+  if (mode === 'payer') {
+    const { error: e1 } = await sb.from('mouvements_tresorerie').insert({ type: 'sortie', date: todayStr(), categorie: 'Fournisseur', description: f.nom, montant, justificatif_path });
+    if (e1) { btn.disabled = false; return alert('Erreur : ' + e1.message); }
+    const { error: e2 } = await sb.from('fournisseurs').update({ montant_du: Math.max(0, Number(f.montant_du) - montant) }).eq('id', id);
+    if (e2) { btn.disabled = false; return alert('Erreur : ' + e2.message); }
+  } else {
+    const { error } = await sb.from('fournisseurs').update({ montant_du: Number(f.montant_du) + montant }).eq('id', id);
+    if (error) { btn.disabled = false; return alert('Erreur : ' + error.message); }
+  }
+  await sb.from('fournisseur_factures').insert({ fournisseur_id: id, type: mode === 'payer' ? 'paiement' : 'dette', montant, date: todayStr(), justificatif_path });
+  btn.disabled = false;
+  document.getElementById('dlg-fournisseur-action').close();
+  await loadAll();
+});
+function renderFournisseurFacturesTable() {
+  document.querySelector('#tbl-fournisseur-factures tbody').innerHTML = FOURNISSEUR_FACTURES.map(f => `
+    <tr>
+      <td>${f.date}</td><td>${escapeHtml(f.fournisseurs ? f.fournisseurs.nom : '')}</td>
+      <td><span class="pill ${f.type==='paiement'?'ok':'no'}">${f.type==='paiement'?'Paiement':'Dette (facture reçue)'}</span></td>
+      <td class="num">${fmt(f.montant)}</td>
+      <td>${f.justificatif_path ? `<a href="#" target="_blank" data-justificatif="${escapeHtml(f.justificatif_path)}">📎 Voir</a>` : '—'}</td>
+    </tr>`).join('') || '<tr><td colspan="5" style="color:var(--text-muted)">Aucune facture enregistrée.</td></tr>';
+  attachJustificatifLinks(document.querySelector('#tbl-fournisseur-factures'));
+}
+
+/* ---------- PRETS (admin only) ---------- */
+function renderPretsTable() {
+  const enCours = PRETS.filter(p => p.statut !== 'rembourse').reduce((s,p) => s + (Number(p.montant) - Number(p.montant_rembourse||0)), 0);
+  document.getElementById('kpi-prets-encours').textContent = fmt(enCours);
+  const statutLabel = { rembourse: 'Remboursé', non_rembourse: 'Non remboursé', partiel: 'Partiel' };
+  document.querySelector('#tbl-prets tbody').innerHTML = PRETS.map(p => `
+    <tr>
+      <td>${p.date}</td><td>${escapeHtml(p.beneficiaire)}</td>
+      <td class="num">${fmt(p.montant)}</td><td class="num">${fmt(p.montant_rembourse)}</td>
+      <td><span class="pill ${p.statut==='rembourse'?'ok':'no'}">${statutLabel[p.statut]}</span></td>
+      <td>${p.statut !== 'rembourse' ? `<button class="btn btn-sm btn-primary" data-remb="${p.id}" data-nom="${escapeHtml(p.beneficiaire)}">Remboursement</button>` : ''}</td>
+    </tr>`).join('') || '<tr><td colspan="6" style="color:var(--text-muted)">Aucun prêt pour le moment.</td></tr>';
+  document.querySelectorAll('#tbl-prets button[data-remb]').forEach(btn => btn.addEventListener('click', () => {
+    document.getElementById('prb-id').value = btn.dataset.remb;
+    document.getElementById('prb-title').textContent = 'Remboursement — ' + btn.dataset.nom;
+    document.getElementById('prb-montant').value = '';
+    document.getElementById('dlg-pret-remb').showModal();
+  }));
+}
+document.getElementById('btn-new-pret').addEventListener('click', () => {
+  document.getElementById('pr-beneficiaire').value = ''; document.getElementById('pr-montant').value = '';
+  document.getElementById('pr-date').value = todayStr(); document.getElementById('pr-note').value = '';
+  document.getElementById('dlg-pret').showModal();
+});
+document.getElementById('pr-cancel').addEventListener('click', () => document.getElementById('dlg-pret').close());
+document.getElementById('pr-confirm').addEventListener('click', async () => {
+  const beneficiaire = document.getElementById('pr-beneficiaire').value.trim();
+  const montant = Number(document.getElementById('pr-montant').value);
+  const date = document.getElementById('pr-date').value || todayStr();
+  const note = document.getElementById('pr-note').value.trim() || null;
+  if (!beneficiaire || !montant || montant <= 0) return alert('Bénéficiaire et montant sont requis.');
+  const { error: e1 } = await sb.from('prets').insert({ beneficiaire, montant, date, note });
+  if (e1) return alert('Erreur : ' + e1.message);
+  const { error: e2 } = await sb.from('mouvements_tresorerie').insert({ type: 'sortie', date, categorie: 'Prêt accordé', description: beneficiaire, montant });
+  if (e2) return alert('Erreur : ' + e2.message);
+  document.getElementById('dlg-pret').close();
+  await loadAll();
+});
+document.getElementById('prb-cancel').addEventListener('click', () => document.getElementById('dlg-pret-remb').close());
+document.getElementById('prb-confirm').addEventListener('click', async () => {
+  const id = document.getElementById('prb-id').value;
+  const montant = Number(document.getElementById('prb-montant').value);
+  if (!montant || montant <= 0) return alert('Montant invalide.');
+  const p = PRETS.find(x => x.id === id);
+  if (!p) return;
+  const nouveauRembourse = Number(p.montant_rembourse||0) + montant;
+  const statut = nouveauRembourse >= Number(p.montant) ? 'rembourse' : 'partiel';
+  const { error: e1 } = await sb.from('prets').update({ montant_rembourse: nouveauRembourse, statut }).eq('id', id);
+  if (e1) return alert('Erreur : ' + e1.message);
+  const { error: e2 } = await sb.from('mouvements_tresorerie').insert({ type: 'entree', date: todayStr(), categorie: 'Remboursement prêt', description: p.beneficiaire, montant });
+  if (e2) return alert('Erreur : ' + e2.message);
+  document.getElementById('dlg-pret-remb').close();
+  await loadAll();
+});
+
 /* ---------- SIMPLE MODE (staff) ---------- */
 async function loadSimple() {
   const { data: articles, error } = await sb.from('v_articles_stock').select('id,code,libelle,stock_restant,statut').order('libelle');
@@ -837,6 +1285,10 @@ async function submitSimple(prefix, type, dlgId) {
   btn.disabled = false; btn.textContent = prefix === 'ss' ? 'Confirmer la vente' : 'Confirmer';
   if (error) return alert('Erreur : ' + error.message);
   document.getElementById(dlgId).close();
+  if (prefix === 'ss') {
+    const artLabel = document.getElementById('ss-title').textContent.replace('Vendre — ', '');
+    showReceipt({ articleLabel: artLabel, qte: quantite, montant });
+  }
   await loadSimple();
 }
 
