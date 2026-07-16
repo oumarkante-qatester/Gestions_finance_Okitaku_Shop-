@@ -22,7 +22,7 @@
     --warning:        #fab219;
     --card-shadow:    0 1px 2px rgba(11,11,11,0.06);
   }
-  :root[data-theme="dark"] .app {
+  :root[data-theme="dark"], :root[data-theme="dark"] .app {
     color-scheme: dark;
     --surface-1:      #1a1a19;
     --page:           #0d0d0d;
@@ -42,6 +42,14 @@
   * { box-sizing: border-box; }
   html, body { margin:0; padding:0; }
   body { background: var(--page); color: var(--text-primary); font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  #bg-pattern {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNDAiIGhlaWdodD0iMjQwIiB2aWV3Qm94PSIwIDAgMjQwIDI0MCI+CiAgPGcgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMmE3OGQ2IiBzdHJva2Utd2lkdGg9IjIuNSIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+CiAgICA8cGF0aCBkPSJNMzAgMTAgTDM2IDI2IEw1MiAyMCBMNDAgMzIgTDUyIDQ0IEwzNiAzOCBMMzAgNTQgTDI0IDM4IEw4IDQ0IEwyMCAzMiBMOCAyMCBMMjQgMjYgWiIvPgogIDwvZz4KICA8ZyBmaWxsPSIjZWI2ODM0Ij4KICAgIDxwYXRoIGQ9Ik0xNzAgMjAgUTE3OCA4IDE4NiAyMCBRMTc4IDMwIDE3MCAyMCBaIi8+CiAgICA8cGF0aCBkPSJNMTg2IDIwIFExOTggMTIgMjA4IDIyIFExOTggMjggMTg2IDIwIFoiLz4KICAgIDxwYXRoIGQ9Ik0xNzAgMjAgUTE2MCAzMCAxNjggNDAgUTE3OCAzNCAxNzAgMjAgWiIvPgogIDwvZz4KICA8ZyBzdHJva2U9IiNlMzQ5NDgiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIgb3BhY2l0eT0iMC45Ij4KICAgIDxjaXJjbGUgY3g9IjYwIiBjeT0iMTMwIiByPSIxMCIvPgogICAgPGxpbmUgeDE9IjYwIiB5MT0iMTA4IiB4Mj0iNjAiIHkyPSIxMTYiLz4KICAgIDxsaW5lIHgxPSI2MCIgeTE9IjE0NCIgeDI9IjYwIiB5Mj0iMTUyIi8+CiAgICA8bGluZSB4MT0iMzgiIHkxPSIxMzAiIHgyPSI0NiIgeTI9IjEzMCIvPgogICAgPGxpbmUgeDE9Ijc0IiB5MT0iMTMwIiB4Mj0iODIiIHkyPSIxMzAiLz4KICAgIDxsaW5lIHgxPSI0NCIgeTE9IjExNCIgeDI9IjQ5IiB5Mj0iMTE5Ii8+CiAgICA8bGluZSB4MT0iNzEiIHkxPSIxNDEiIHgyPSI3NiIgeTI9IjE0NiIvPgogICAgPGxpbmUgeDE9Ijc2IiB5MT0iMTE0IiB4Mj0iNzEiIHkyPSIxMTkiLz4KICAgIDxsaW5lIHgxPSI0OSIgeTE9IjE0MSIgeDI9IjQ0IiB5Mj0iMTQ2Ii8+CiAgPC9nPgogIDxnIHN0cm9rZT0iI2VkYTEwMCIgc3Ryb2tlLXdpZHRoPSIzIiBmaWxsPSJub25lIiBzdHJva2UtbGluZWNhcD0icm91bmQiPgogICAgPGxpbmUgeDE9IjE1MCIgeTE9IjE1MCIgeDI9IjE4OCIgeTI9IjE4OCIvPgogICAgPGxpbmUgeDE9IjE0NSIgeTE9IjE0NSIgeDI9IjE1MiIgeTI9IjE1MiIvPgogICAgPHBhdGggZD0iTTE0NCAxNDQgTDEzOCAxMzgiIHN0cm9rZS13aWR0aD0iNCIvPgogIDwvZz4KICA8ZyBmaWxsPSIjMmE3OGQ2IiBvcGFjaXR5PSIwLjg1Ij4KICAgIDxwYXRoIGQ9Ik0xMTAgMjAwIFExMTYgMTkwIDEyMiAyMDAgUTExNiAyMDggMTEwIDIwMCBaIi8+CiAgICA8cGF0aCBkPSJNMTIyIDIwMCBRMTMyIDE5NCAxNDAgMjAyIFExMzIgMjA3IDEyMiAyMDAgWiIvPgogICAgPHBhdGggZD0iTTExMCAyMDAgUTEwMiAyMDggMTA4IDIxNiBRMTE2IDIxMiAxMTAgMjAwIFoiLz4KICA8L2c+CiAgPGcgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZDAzYjNiIiBzdHJva2Utd2lkdGg9IjIuNSIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgb3BhY2l0eT0iMC45Ij4KICAgIDxwYXRoIGQ9Ik0yMDUgMTAwIEwyMTAgMTEyIEwyMjIgMTA4IEwyMTQgMTE3IEwyMjIgMTI2IEwyMTAgMTIyIEwyMDUgMTM0IEwyMDAgMTIyIEwxODggMTI2IEwxOTYgMTE3IEwxODggMTA4IEwyMDAgMTEyIFoiLz4KICA8L2c+Cjwvc3ZnPgo=");
+    background-repeat: repeat; background-size: 240px 240px;
+    opacity: 0.06;
+  }
+  [data-theme="dark"] #bg-pattern { opacity: 0.10; }
+  .app { position: relative; z-index: 1; }
   .app { min-height: 100vh; }
   a { color: var(--series-1); }
   button { font-family: inherit; }
@@ -67,6 +75,10 @@
   .login-msg.ok { color: var(--good); }
   .login-toggle { font-size: 13px; text-align:center; margin-top: 14px; color: var(--text-secondary); }
   .login-toggle button { background:none;border:none;color:var(--series-1);cursor:pointer;font-size:13px;padding:0; }
+  .pw-wrap { position:relative; display:flex; align-items:center; }
+  .pw-wrap input { width:100%; padding-right:38px; }
+  .pw-toggle { position:absolute; right:8px; background:none; border:none; cursor:pointer; font-size:15px; padding:2px 4px; opacity:0.7; }
+  .pw-toggle:hover { opacity:1; }
 
   #app-screen { display:none; }
   header.topbar { display:flex; align-items:center; justify-content:space-between; padding: 14px 22px; border-bottom: 1px solid var(--border); background: var(--surface-1); position: sticky; top:0; z-index: 5; }
@@ -145,6 +157,7 @@
   @media print {
     header.topbar, nav.tabs, .no-print { display:none !important; }
     body { background: #fff; }
+    #bg-pattern { display:none !important; }
     .card, .kpi { box-shadow:none; border: 1px solid #ccc; }
   }
   body.printing-receipt > *:not(#receipt-overlay) { display:none !important; }
@@ -165,6 +178,7 @@
 </style>
 </head>
 <body>
+<div id="bg-pattern" aria-hidden="true"></div>
 <div class="app">
 
   <!-- LOGIN -->
@@ -215,9 +229,18 @@
       <h1>Okitaku Shop</h1>
       <p class="sub">Ventes, stock &amp; trésorerie — accès équipe</p>
       <div class="field"><label for="email">Email</label><input id="email" type="email" placeholder="toi@exemple.com" autocomplete="username" /></div>
-      <div class="field"><label for="password">Mot de passe</label><input id="password" type="password" placeholder="••••••••" autocomplete="current-password" /></div>
+      <div class="field">
+        <label for="password">Mot de passe</label>
+        <div class="pw-wrap">
+          <input id="password" type="password" placeholder="••••••••" autocomplete="current-password" />
+          <button type="button" class="pw-toggle" data-pw-toggle="password" aria-label="Afficher le mot de passe">👁️</button>
+        </div>
+      </div>
       <button class="btn btn-primary" id="btn-signin" style="width:100%">Se connecter</button>
       <div class="login-msg" id="login-msg"></div>
+      <div class="login-toggle">
+        <button id="btn-forgot-password">Mot de passe oublié ?</button>
+      </div>
       <div class="login-toggle">Pas encore de compte ? <button id="btn-show-signup">Créer un compte</button></div>
     </div>
     </div>
@@ -254,6 +277,7 @@
 
       <!-- SIMPLE MODE (staff) -->
       <section id="simple-screen" style="display:none;">
+        <div class="kpi" style="margin-bottom:12px;"><div class="label">Stock disponible en boutique</div><div class="value" id="simple-kpi-stock-unites">—</div></div>
         <input type="text" class="search-bar" id="simple-search" placeholder="🔍 Rechercher un article (nom ou code)…" />
         <select id="simple-filter-categorie" class="search-bar" style="padding:10px 14px;"><option value="">Toutes catégories</option></select>
         <div id="simple-list"></div>
@@ -266,6 +290,7 @@
           <div class="kpi"><div class="label">Total des ventes (cumulé)</div><div class="value" id="kpi-ventes">—</div></div>
           <div class="kpi"><div class="label">Total achats &amp; dépenses</div><div class="value" id="kpi-depenses">—</div></div>
           <div class="kpi"><div class="label">Valeur du stock actuel</div><div class="value" id="kpi-stock">—</div></div>
+          <div class="kpi"><div class="label">Stock disponible en boutique</div><div class="value" id="kpi-stock-unites">—</div></div>
         </div>
         <div class="grid-kpi">
           <div class="kpi"><div class="label">Ventes ce mois-ci</div><div class="value good" id="kpi-ventes-mois">—</div></div>
@@ -468,9 +493,41 @@
   <div class="dialog-body">
     <h3>Créer un compte</h3>
     <div class="field"><label>Email</label><input id="su-email" type="email" /></div>
-    <div class="field"><label>Mot de passe (min. 6 caractères)</label><input id="su-password" type="password" /></div>
+    <div class="field">
+      <label>Mot de passe (min. 6 caractères)</label>
+      <div class="pw-wrap">
+        <input id="su-password" type="password" />
+        <button type="button" class="pw-toggle" data-pw-toggle="su-password" aria-label="Afficher le mot de passe">👁️</button>
+      </div>
+    </div>
     <div class="login-msg" id="signup-msg"></div>
     <div class="dialog-actions"><button class="btn" id="su-cancel">Annuler</button><button class="btn btn-primary" id="su-confirm">Créer le compte</button></div>
+  </div>
+</dialog>
+
+<dialog id="dlg-forgot-password">
+  <div class="dialog-body">
+    <h3>Mot de passe oublié</h3>
+    <p class="desc" style="margin:0 0 10px;">Entre ton email, tu recevras un lien pour choisir un nouveau mot de passe.</p>
+    <div class="field"><label>Email</label><input id="fp-email" type="email" /></div>
+    <div class="login-msg" id="fp-msg"></div>
+    <div class="dialog-actions"><button class="btn" id="fp-cancel">Annuler</button><button class="btn btn-primary" id="fp-confirm">Envoyer le lien</button></div>
+  </div>
+</dialog>
+
+<dialog id="dlg-new-password">
+  <div class="dialog-body">
+    <h3>Choisir un nouveau mot de passe</h3>
+    <p class="desc" style="margin:0 0 10px;">Tu es arrivé ici via le lien de réinitialisation. Choisis un nouveau mot de passe pour ton compte.</p>
+    <div class="field">
+      <label>Nouveau mot de passe (min. 6 caractères)</label>
+      <div class="pw-wrap">
+        <input id="np-password" type="password" />
+        <button type="button" class="pw-toggle" data-pw-toggle="np-password" aria-label="Afficher le mot de passe">👁️</button>
+      </div>
+    </div>
+    <div class="login-msg" id="np-msg"></div>
+    <div class="dialog-actions"><button class="btn btn-primary" id="np-confirm" style="width:100%">Enregistrer le nouveau mot de passe</button></div>
   </div>
 </dialog>
 
@@ -677,13 +734,53 @@ document.getElementById('su-confirm').addEventListener('click', async () => {
 });
 document.getElementById('btn-signout').addEventListener('click', () => sb.auth.signOut());
 
-sb.auth.onAuthStateChange((_event, session) => {
+document.getElementById('btn-forgot-password').addEventListener('click', () => {
+  document.getElementById('fp-email').value = document.getElementById('email').value.trim();
+  document.getElementById('fp-msg').textContent = '';
+  document.getElementById('dlg-forgot-password').showModal();
+});
+document.getElementById('fp-cancel').addEventListener('click', () => document.getElementById('dlg-forgot-password').close());
+document.getElementById('fp-confirm').addEventListener('click', async () => {
+  const email = document.getElementById('fp-email').value.trim();
+  const msg = document.getElementById('fp-msg');
+  if (!email) { msg.className = 'login-msg error'; msg.textContent = 'Entre ton email.'; return; }
+  msg.className = 'login-msg'; msg.textContent = 'Envoi…';
+  const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + window.location.pathname });
+  if (error) { msg.className = 'login-msg error'; msg.textContent = error.message; return; }
+  msg.className = 'login-msg ok'; msg.textContent = 'Email envoyé ! Vérifie ta boîte mail (et les spams) pour le lien de réinitialisation.';
+});
+document.getElementById('np-confirm').addEventListener('click', async () => {
+  const password = document.getElementById('np-password').value;
+  const msg = document.getElementById('np-msg');
+  if (!password || password.length < 6) { msg.className = 'login-msg error'; msg.textContent = 'Minimum 6 caractères.'; return; }
+  msg.className = 'login-msg'; msg.textContent = 'Enregistrement…';
+  const { error } = await sb.auth.updateUser({ password });
+  if (error) { msg.className = 'login-msg error'; msg.textContent = error.message; return; }
+  msg.className = 'login-msg ok'; msg.textContent = 'Mot de passe mis à jour ✓';
+  setTimeout(() => { document.getElementById('dlg-new-password').close(); document.getElementById('np-password').value = ''; }, 1200);
+});
+document.querySelectorAll('[data-pw-toggle]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const input = document.getElementById(btn.dataset.pwToggle);
+    if (!input) return;
+    const showing = input.type === 'text';
+    input.type = showing ? 'password' : 'text';
+    btn.textContent = showing ? '👁️' : '🙈';
+  });
+});
+
+sb.auth.onAuthStateChange((event, session) => {
   if (session) {
     loginScreen.style.display = 'none';
     appScreen.style.display = 'block';
     CURRENT_EMAIL = session.user.email;
     document.getElementById('user-email').textContent = CURRENT_EMAIL;
     boot();
+    if (event === 'PASSWORD_RECOVERY') {
+      document.getElementById('np-msg').textContent = '';
+      document.getElementById('np-password').value = '';
+      document.getElementById('dlg-new-password').showModal();
+    }
   } else {
     loginScreen.style.display = 'flex';
     appScreen.style.display = 'none';
@@ -817,7 +914,8 @@ function totals() {
   const ventes = ARTICLES.reduce((s,a) => s + Number(a.montant_total_ventes||0), 0) + CASH_MVTS.filter(m=>m.type==='entree').reduce((s,m)=>s+Number(m.montant),0);
   const achats = ARTICLES.reduce((s,a) => s + Number(a.montant_total_achats||0), 0) + CASH_MVTS.filter(m=>m.type==='sortie').reduce((s,m)=>s+Number(m.montant),0);
   const stockVal = ARTICLES.reduce((s,a) => s + Number(a.valeur_stock||0), 0);
-  return { ventes, achats, solde: ventes - achats, stockVal };
+  const stockUnits = ARTICLES.reduce((s,a) => s + Number(a.stock_restant||0), 0);
+  return { ventes, achats, solde: ventes - achats, stockVal, stockUnits };
 }
 function renderKPIs() {
   const t = totals();
@@ -826,6 +924,7 @@ function renderKPIs() {
   document.getElementById('kpi-ventes').textContent = fmt(t.ventes);
   document.getElementById('kpi-depenses').textContent = fmt(t.achats);
   document.getElementById('kpi-stock').textContent = fmt(t.stockVal);
+  document.getElementById('kpi-stock-unites').textContent = t.stockUnits.toLocaleString('fr-FR') + ' article' + (t.stockUnits>1?'s':'');
 
   const salesInRange = (fromStr, toStr) =>
     STOCK_MVTS.filter(m => m.type==='sortie' && m.date >= fromStr && m.date <= toStr).reduce((s,m)=>s+Number(m.montant),0)
@@ -1435,6 +1534,8 @@ async function loadSimple() {
   if (error) { document.getElementById('data-warning').style.display='block'; document.getElementById('data-warning').textContent = error.message; return; }
   ARTICLES = articles || [];
   STOCK_MVTS = sm || [];
+  const totalUnits = ARTICLES.reduce((s,a) => s + Number(a.stock_restant||0), 0);
+  document.getElementById('simple-kpi-stock-unites').textContent = totalUnits.toLocaleString('fr-FR') + ' article' + (totalUnits>1?'s':'');
   const cats = Array.from(new Set(ARTICLES.map(a => a.categorie).filter(Boolean))).sort();
   const sel = document.getElementById('simple-filter-categorie');
   const current = sel.value;
