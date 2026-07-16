@@ -322,6 +322,7 @@
                 <option value="sortie">Sorties (ventes)</option>
                 <option value="">Tous les mouvements</option>
               </select>
+              <button class="btn btn-primary btn-sm" id="btn-appro-add">+ Ajouter produit (réassort)</button>
             </div>
           </div>
           <div class="table-wrap">
@@ -627,10 +628,29 @@
   </div>
 </dialog>
 
+<dialog id="dlg-lots" style="max-width:560px;width:92vw;">
+  <div class="dialog-body">
+    <h3 id="lots-title" style="margin-bottom:2px;">Lots — </h3>
+    <p class="desc" style="margin:0 0 12px;">Chaque arrivage est indépendant : le plus ancien se vide en premier (FIFO). Un lot épuisé est bloqué et n'est jamais remélangé à un nouvel arrivage.</p>
+    <div class="table-wrap" style="max-height:400px;overflow:auto;">
+      <table id="tbl-lots" style="font-size:13px;">
+        <thead><tr><th>Date</th><th class="num">Reçu</th><th class="num">Vendu</th><th class="num">Restant</th><th class="num">Coût</th><th>Statut</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="dialog-actions"><button class="btn" id="lots-close">Fermer</button></div>
+  </div>
+</dialog>
+
 <dialog id="dlg-mouvement-stock">
   <div class="dialog-body">
     <h3 id="ms-title">Mouvement de stock</h3>
-    <input type="hidden" id="ms-article-id" /><input type="hidden" id="ms-type" />
+    <input type="hidden" id="ms-type" />
+    <div class="field" id="ms-article-picker-wrap" style="display:none;">
+      <label>Produit</label>
+      <select id="ms-article-picker"></select>
+    </div>
+    <input type="hidden" id="ms-article-id" />
     <div class="field"><label>Date</label><input id="ms-date" type="date" /></div>
     <div class="field"><label>Quantité</label><input id="ms-qte" type="number" min="1" /></div>
     <div class="field"><label id="ms-montant-label">Montant total (FCFA)</label><input id="ms-montant" type="number" min="0" /></div>
@@ -1181,6 +1201,7 @@ function renderArticlesTable() {
       <td style="white-space:nowrap;">
         <button class="btn btn-sm" data-action="entree" data-id="${a.id}" data-code="${escapeHtml(a.code)}">+ Entrée</button>
         <button class="btn btn-sm" data-action="sortie" data-id="${a.id}" data-code="${escapeHtml(a.code)}">+ Sortie</button>
+        <button class="btn btn-sm" data-view-lots="${a.id}" data-code="${escapeHtml(a.code)}">📦 Lots</button>
         <button class="btn btn-sm" data-edit-art="${a.id}">✏️</button>
         <button class="btn btn-sm btn-danger" data-del-art="${a.id}" data-code="${escapeHtml(a.code)}">🗑️</button>
       </td>
@@ -1189,6 +1210,7 @@ function renderArticlesTable() {
   tbody.innerHTML = rows || '<tr><td colspan="13" style="color:var(--text-muted)">Aucun article.</td></tr>';
   tbody.querySelectorAll('button[data-action]').forEach(btn => btn.addEventListener('click', () => openMouvementStockDialog(btn.dataset.id, btn.dataset.action, btn.dataset.code)));
   tbody.querySelectorAll('button[data-edit-art]').forEach(btn => btn.addEventListener('click', () => openEditArticle(btn.dataset.editArt)));
+  tbody.querySelectorAll('button[data-view-lots]').forEach(btn => btn.addEventListener('click', () => openLotsDialog(btn.dataset.viewLots, btn.dataset.code)));
   tbody.querySelectorAll('button[data-goto-mvts]').forEach(btn => btn.addEventListener('click', () => {
     APPRO_ARTICLE_FILTER = btn.dataset.gotoMvts;
     document.getElementById('filter-mvt-type').value = '';
@@ -1469,7 +1491,46 @@ document.getElementById('import-confirm').addEventListener('click', async () => 
   alert(`${created.length} article(s) importé(s) avec succès.` + (mvtError ? `\n\nAttention : le stock de départ n'a pas pu être enregistré pour certains articles (${mvtError}).` : ''));
 });
 
+/* ---------- LOTS / FIFO PAR ARTICLE ---------- */
+function computeLotsForArticle(articleId) {
+  const mvts = STOCK_MVTS.filter(m => m.article_id === articleId)
+    .slice()
+    .sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.created_at || '').localeCompare(b.created_at || '') || (a.id || '').localeCompare(b.id || ''));
+  const lots = mvts.filter(m => m.type === 'entree').map(m => ({
+    date: m.date, recu: Number(m.quantite || 0), restant: Number(m.quantite || 0), montant: Number(m.montant || 0)
+  }));
+  const sorties = mvts.filter(m => m.type === 'sortie');
+  let li = 0;
+  sorties.forEach(s => {
+    let toDeduct = Number(s.quantite || 0);
+    while (toDeduct > 0 && li < lots.length) {
+      if (lots[li].restant <= 0) { li++; continue; }
+      const take = Math.min(lots[li].restant, toDeduct);
+      lots[li].restant -= take;
+      toDeduct -= take;
+      if (lots[li].restant <= 0) li++;
+    }
+  });
+  return lots.map(l => ({ ...l, vendu: l.recu - l.restant, statut: l.restant <= 0 ? 'Épuisé — bloqué' : 'Actif' }));
+}
+function openLotsDialog(articleId, code) {
+  document.getElementById('lots-title').textContent = 'Lots — ' + code;
+  const lots = computeLotsForArticle(articleId);
+  document.querySelector('#tbl-lots tbody').innerHTML = lots.length ? lots.map(l => `
+    <tr style="${l.statut.startsWith('Épuisé') ? 'opacity:0.55;' : ''}">
+      <td>${escapeHtml(l.date || '—')}</td>
+      <td class="num">${l.recu}</td>
+      <td class="num">${l.vendu}</td>
+      <td class="num"><b>${l.restant}</b></td>
+      <td class="num">${fmt(l.montant)}</td>
+      <td><span class="pill ${l.statut.startsWith('Épuisé') ? 'no' : 'ok'}">${l.statut.startsWith('Épuisé') ? '⚫ Épuisé — bloqué' : '🟢 Actif'}</span></td>
+    </tr>`).join('') : '<tr><td colspan="6" style="color:var(--text-muted)">Aucun arrivage enregistré pour ce produit.</td></tr>';
+  document.getElementById('dlg-lots').showModal();
+}
+document.getElementById('lots-close').addEventListener('click', () => document.getElementById('dlg-lots').close());
+
 function openMouvementStockDialog(articleId, type, code) {
+  document.getElementById('ms-article-picker-wrap').style.display = 'none';
   document.getElementById('ms-article-id').value = articleId;
   document.getElementById('ms-type').value = type;
   document.getElementById('ms-title').textContent = (type === 'entree' ? 'Entrée de stock — ' : 'Sortie / vente — ') + code;
@@ -1478,6 +1539,22 @@ function openMouvementStockDialog(articleId, type, code) {
   document.getElementById('ms-qte').value = ''; document.getElementById('ms-montant').value = ''; document.getElementById('ms-note').value = ''; document.getElementById('ms-file').value = '';
   document.getElementById('dlg-mouvement-stock').showModal();
 }
+document.getElementById('btn-appro-add').addEventListener('click', () => {
+  const picker = document.getElementById('ms-article-picker');
+  picker.innerHTML = [...ARTICLES].sort((a, b) => a.code.localeCompare(b.code)).map(a =>
+    `<option value="${a.id}" data-code="${escapeHtml(a.code)}">${escapeHtml(a.code)} — ${escapeHtml(a.libelle)}</option>`).join('');
+  document.getElementById('ms-article-picker-wrap').style.display = '';
+  document.getElementById('ms-type').value = 'entree';
+  document.getElementById('ms-title').textContent = 'Nouveau réassort (approvisionnement)';
+  document.getElementById('ms-montant-label').textContent = "Montant total de l'achat (FCFA)";
+  document.getElementById('ms-date').value = todayStr();
+  document.getElementById('ms-qte').value = ''; document.getElementById('ms-montant').value = ''; document.getElementById('ms-note').value = ''; document.getElementById('ms-file').value = '';
+  document.getElementById('ms-article-id').value = picker.value;
+  document.getElementById('dlg-mouvement-stock').showModal();
+});
+document.getElementById('ms-article-picker').addEventListener('change', (e) => {
+  document.getElementById('ms-article-id').value = e.target.value;
+});
 document.getElementById('ms-cancel').addEventListener('click', () => document.getElementById('dlg-mouvement-stock').close());
 document.getElementById('ms-confirm').addEventListener('click', async () => {
   const article_id = document.getElementById('ms-article-id').value;
@@ -1488,7 +1565,22 @@ document.getElementById('ms-confirm').addEventListener('click', async () => {
   const note = document.getElementById('ms-note').value.trim() || null;
   const file = document.getElementById('ms-file').files[0];
   if (!quantite || quantite <= 0) return alert('Quantité invalide.');
-  const btn = document.getElementById('ms-confirm'); btn.disabled = true; btn.textContent = 'Enregistrement…';
+  const btn = document.getElementById('ms-confirm'); btn.disabled = true; btn.textContent = 'Vérification du stock…';
+  if (type === 'sortie') {
+    // Anti-conflit : on relit le stock réel en base (pas la copie locale, qui peut être
+    // périmée si un autre membre de l'équipe a vendu/réassorti entre-temps).
+    const { data: liveArt, error: liveErr } = await sb.from('v_articles_stock').select('stock_restant, code, libelle').eq('id', article_id).maybeSingle();
+    if (liveErr) { btn.disabled = false; btn.textContent = 'Enregistrer'; return alert('Impossible de vérifier le stock : ' + liveErr.message); }
+    const stockActuel = liveArt ? Number(liveArt.stock_restant || 0) : 0;
+    if (quantite > stockActuel) {
+      btn.disabled = false; btn.textContent = 'Enregistrer';
+      return alert(
+        `Stock insuffisant pour ${liveArt ? liveArt.code : 'cet article'} : il ne reste que ${stockActuel} en stock ` +
+        `(quelqu'un d'autre a peut-être vendu ou modifié ce produit entre-temps). Rechargez la page pour voir le stock à jour.`
+      );
+    }
+  }
+  btn.textContent = 'Enregistrement…';
   const justificatif_path = await uploadJustificatif(file);
   const { error } = await sb.from('mouvements_stock').insert({ article_id, type, date, quantite, montant, note, justificatif_path });
   btn.disabled = false; btn.textContent = 'Enregistrer';
