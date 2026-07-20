@@ -122,6 +122,9 @@
   .pill.role-admin { background: color-mix(in srgb, var(--warning) 20%, transparent); color: #8a5a00; }
   [data-theme="dark"] .pill.role-admin { color: var(--warning); }
   .pill.role-staff { background: color-mix(in srgb, var(--series-1) 15%, transparent); color: var(--series-1); }
+  .pill.info { background: color-mix(in srgb, var(--series-1) 15%, transparent); color: var(--series-1); }
+  .pill.warn { background: color-mix(in srgb, var(--warning) 20%, transparent); color: #8a5a00; }
+  [data-theme="dark"] .pill.warn { color: var(--warning); }
   .btn-link-num { border:none; background:none; padding:0; font: inherit; font-variant-numeric: tabular-nums; color: var(--series-1); cursor:pointer; text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 2px; }
   .btn-link-num:hover { color: var(--text-primary); }
 
@@ -177,6 +180,7 @@
     #receipt-overlay.preview-open .receipt-actions { display:flex; gap:8px; justify-content:center; margin-top:14px; }
   }
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 <div id="bg-pattern" aria-hidden="true"></div>
@@ -266,8 +270,10 @@
       <button data-tab="tresorerie">Trésorerie</button>
       <button data-tab="rapport">Rapport financier</button>
       <button data-tab="approvisionnement">Approvisionnement</button>
+      <button data-tab="sorties-stock">Historique sorties</button>
       <button data-tab="fournisseurs">Fournisseurs</button>
-      <button data-tab="prets">Prêts</button>
+      <button data-tab="prets">Avances au personnel</button>
+      <button data-tab="pret-produits">Prêts</button>
       <button data-tab="equipe">Équipe</button>
     </nav>
 
@@ -327,6 +333,45 @@
           </div>
           <div class="table-wrap">
             <table id="tbl-approvisionnement"><thead><tr><th>Date</th><th>Type</th><th>Article</th><th class="num">Quantité</th><th class="num">Montant</th><th>Note</th><th>Justificatif</th><th>Par</th><th></th></tr></thead><tbody></tbody></table>
+          </div>
+        </div>
+      </section>
+
+      <!-- HISTORIQUE DES SORTIES DE STOCK (registre unifié : ventes, prêts, campagnes, dons, pertes, casse...) -->
+      <section class="tabpanel" id="tab-sorties-stock">
+        <div class="card">
+          <div class="toolbar">
+            <div><h3 style="margin:0">Historique des sorties de stock</h3><p class="desc" style="margin:2px 0 0">Registre unifié de toutes les sorties : ventes, prêts, campagnes, dons, pertes, casse, retours fournisseur, échantillons, consommation interne.</p></div>
+          </div>
+          <div class="toolbar" style="flex-wrap:wrap;gap:8px;">
+            <input id="hs-search" class="search-bar" style="margin:0;max-width:240px;" placeholder="🔍 Rechercher (produit, personne, motif)…" />
+            <input id="hs-filter-date-debut" type="date" title="Depuis le" />
+            <input id="hs-filter-date-fin" type="date" title="Jusqu'au" />
+            <select id="hs-filter-type">
+              <option value="">Tous les types</option>
+              <option value="vente">Vente</option>
+              <option value="pret">Prêt</option>
+              <option value="campagne">Campagne</option>
+              <option value="cadeau">Cadeau</option>
+              <option value="consommation_interne">Consommation interne</option>
+              <option value="perte">Perte</option>
+              <option value="casse">Produit cassé</option>
+              <option value="retour_fournisseur">Retour fournisseur</option>
+              <option value="echantillon">Échantillon</option>
+            </select>
+            <button class="btn btn-sm" id="hs-btn-reset-filtres">Réinitialiser</button>
+            <span style="flex:1"></span>
+            <button class="btn btn-sm" id="hs-btn-export-excel">⬇️ Export Excel</button>
+            <button class="btn btn-sm" id="hs-btn-print">🖨️ Imprimer / PDF</button>
+          </div>
+          <div class="table-wrap">
+            <table id="tbl-sorties-stock">
+              <thead><tr>
+                <th>N°</th><th>Date</th><th>Heure</th><th>Produit</th><th class="num">Qté</th><th class="num">Prix unit.</th><th class="num">Valeur totale</th>
+                <th>Personne</th><th>Téléphone</th><th>Type</th><th>Motif</th><th>Utilisateur</th><th>Justif.</th>
+              </tr></thead>
+              <tbody></tbody>
+            </table>
           </div>
         </div>
       </section>
@@ -425,18 +470,58 @@
         </div>
       </section>
 
-      <!-- PRETS -->
+      <!-- AVANCES AU PERSONNEL (anciennement "Prêts" — prêts d'argent, distinct du prêt de produits ci-dessous) -->
       <section class="tabpanel" id="tab-prets">
         <div class="grid-kpi" style="grid-template-columns: 1fr;">
-          <div class="kpi"><div class="label">Total prêts en cours (non remboursés)</div><div class="value bad" id="kpi-prets-encours">—</div></div>
+          <div class="kpi"><div class="label">Total avances en cours (non remboursées)</div><div class="value bad" id="kpi-prets-encours">—</div></div>
         </div>
         <div class="card">
           <div class="toolbar">
-            <div><h3 style="margin:0">Prêts accordés</h3><p class="desc" style="margin:2px 0 0">Prêts à des employés/proches. Un prêt accordé enregistre une sortie de trésorerie ; un remboursement enregistre une entrée.</p></div>
-            <button class="btn btn-primary btn-sm" id="btn-new-pret">+ Nouveau prêt</button>
+            <div><h3 style="margin:0">Avances au personnel</h3><p class="desc" style="margin:2px 0 0">Avances d'argent à des employés/proches. Une avance accordée enregistre une sortie de trésorerie ; un remboursement enregistre une entrée. (Pour prêter des produits, voir l'onglet « Prêts ».)</p></div>
+            <button class="btn btn-primary btn-sm" id="btn-new-pret">+ Nouvelle avance</button>
           </div>
           <div class="table-wrap">
             <table id="tbl-prets"><thead><tr><th>Date</th><th>Bénéficiaire</th><th class="num">Montant</th><th class="num">Remboursé</th><th>Statut</th><th></th></tr></thead><tbody></tbody></table>
+          </div>
+        </div>
+      </section>
+
+      <!-- PRETS DE PRODUITS -->
+      <section class="tabpanel" id="tab-pret-produits">
+        <div class="grid-kpi">
+          <div class="kpi"><div class="label">Prêts en cours</div><div class="value" id="pp-kpi-encours">—</div></div>
+          <div class="kpi"><div class="label">Valeur immobilisée</div><div class="value bad" id="pp-kpi-valeur">—</div></div>
+          <div class="kpi"><div class="label">En retard</div><div class="value bad" id="pp-kpi-retard">—</div></div>
+          <div class="kpi"><div class="label">Retournés (total)</div><div class="value good" id="pp-kpi-retournes">—</div></div>
+        </div>
+        <div class="card">
+          <div class="toolbar">
+            <div><h3 style="margin:0">Prêts de produits</h3><p class="desc" style="margin:2px 0 0">Produits confiés temporairement à une personne, à rendre. Le stock est repris automatiquement au retour (total ou partiel).</p></div>
+            <button class="btn btn-primary btn-sm" id="pp-btn-new">+ Nouveau prêt</button>
+          </div>
+          <div class="toolbar" style="flex-wrap:wrap;gap:8px;">
+            <input id="pp-search" class="search-bar" style="margin:0;max-width:240px;" placeholder="🔍 Rechercher (nom, téléphone, produit, n°)…" />
+            <input id="pp-filter-date-debut" type="date" title="Depuis le" />
+            <input id="pp-filter-date-fin" type="date" title="Jusqu'au" />
+            <select id="pp-filter-statut">
+              <option value="">Tous les statuts</option>
+              <option value="en_cours">En cours</option>
+              <option value="retourne">Retourné</option>
+              <option value="annule">Annulé</option>
+            </select>
+            <button class="btn btn-sm" id="pp-btn-reset-filtres">Réinitialiser</button>
+            <span style="flex:1"></span>
+            <button class="btn btn-sm" id="pp-btn-export-excel">⬇️ Export Excel</button>
+            <button class="btn btn-sm" id="pp-btn-print">🖨️ Imprimer / PDF</button>
+          </div>
+          <div class="table-wrap">
+            <table id="tbl-pret-produits">
+              <thead><tr>
+                <th>N°</th><th>Date</th><th>Bénéficiaire</th><th>Téléphone</th><th>Produits</th>
+                <th class="num">Valeur totale</th><th>Retour prévu</th><th>Retour réel</th><th>Statut</th><th></th>
+              </tr></thead>
+              <tbody></tbody>
+            </table>
           </div>
         </div>
       </section>
@@ -734,6 +819,52 @@
   </div>
 </dialog>
 
+<dialog id="dlg-pp" style="max-width:640px;width:94vw;">
+  <div class="dialog-body">
+    <h3 id="pp-dlg-title">Nouveau prêt de produits</h3>
+    <input type="hidden" id="pp-id" />
+    <div class="field"><label>Nom du bénéficiaire</label><input id="pp-nom" /></div>
+    <div class="field"><label>Téléphone</label><input id="pp-tel" /></div>
+    <div class="field"><label>Adresse (optionnel)</label><input id="pp-adresse" /></div>
+    <div class="field"><label>Observation</label><input id="pp-observation" /></div>
+    <div class="field"><label>Date du prêt</label><input id="pp-date" type="date" /></div>
+    <div class="field"><label>Date de retour prévue</label><input id="pp-date-retour-prevue" type="date" /></div>
+    <div class="field">
+      <label>Produits prêtés</label>
+      <p class="desc" id="pp-lignes-lock-msg" style="display:none;margin:0 0 8px;">Des retours ont déjà été enregistrés sur ce prêt : les produits/quantités ne sont plus modifiables, seules les informations générales le sont.</p>
+      <div class="table-wrap" style="max-height:260px;overflow:auto;">
+        <table style="font-size:13px;">
+          <thead><tr><th>Produit</th><th class="num">Qté</th><th class="num">Prix unit.</th><th class="num">Total</th><th></th></tr></thead>
+          <tbody id="pp-lignes-body"></tbody>
+        </table>
+      </div>
+      <button class="btn btn-sm" id="pp-btn-add-ligne" style="margin-top:8px;">+ Ajouter un produit</button>
+      <div style="text-align:right;margin-top:8px;font-weight:600;">Total : <span id="pp-total">0 FCFA</span></div>
+    </div>
+    <div class="dialog-actions"><button class="btn" id="pp-cancel">Annuler</button><button class="btn btn-primary" id="pp-confirm">Enregistrer</button></div>
+  </div>
+</dialog>
+
+<dialog id="dlg-pp-retour" style="max-width:560px;width:92vw;">
+  <div class="dialog-body">
+    <h3 id="pp-retour-title">Retour de prêt</h3>
+    <input type="hidden" id="pp-retour-pret-id" />
+    <p class="desc" id="pp-retour-desc" style="margin:0 0 10px;"></p>
+    <div class="table-wrap" style="max-height:300px;overflow:auto;">
+      <table style="font-size:13px;">
+        <thead><tr><th>Produit</th><th class="num">Prêté</th><th class="num">Déjà rendu</th><th class="num">Restant</th><th class="num">Retour maintenant</th></tr></thead>
+        <tbody id="pp-retour-lignes-body"></tbody>
+      </table>
+    </div>
+    <div class="field" style="margin-top:10px;"><label>Note (optionnel)</label><input id="pp-retour-note" /></div>
+    <div class="dialog-actions">
+      <button class="btn btn-danger" id="pp-retour-annuler" style="margin-right:auto;">Annuler ce prêt (restitue tout le stock)</button>
+      <button class="btn" id="pp-retour-cancel">Fermer</button>
+      <button class="btn btn-primary" id="pp-retour-confirm">Enregistrer le retour</button>
+    </div>
+  </div>
+</dialog>
+
 <dialog id="dlg-simple-sale">
   <div class="dialog-body">
     <h3 id="ss-title">Vendre</h3>
@@ -968,6 +1099,8 @@ document.querySelectorAll('nav.tabs button').forEach(btn => {
     document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
     if (btn.dataset.tab === 'equipe') renderTeamTable();
     if (btn.dataset.tab === 'approvisionnement') renderApprovisionnementTable();
+    if (btn.dataset.tab === 'pret-produits' && window.OKITAKU_PP) window.OKITAKU_PP.refresh();
+    if (btn.dataset.tab === 'sorties-stock' && window.OKITAKU_HS) window.OKITAKU_HS.refresh();
   });
 });
 
@@ -2042,6 +2175,20 @@ async function submitSimple(prefix, type, dlgId) {
 
 /* ---------- INIT ---------- */
 sb.auth.getSession().then(({data}) => { if (!data.session) { loginScreen.style.display = 'flex'; } });
+
+/* ---------- PONT VERS LES MODULES JS (Prêts de produits, Historique des sorties) ---------- */
+/* Ajout additif : n'affecte aucune fonction existante ci-dessus. */
+window.OKITAKU_BRIDGE = {
+  sb,
+  fmt,
+  todayStr,
+  escapeHtml,
+  uploadJustificatif,
+  attachJustificatifLinks,
+  getRole: () => CURRENT_ROLE,
+};
 </script>
+<script type="module" src="js/prets-produits.js"></script>
+<script type="module" src="js/historique-sorties.js"></script>
 </body>
 </html>
