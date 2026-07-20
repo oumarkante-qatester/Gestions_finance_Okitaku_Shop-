@@ -801,7 +801,8 @@
 
 <dialog id="dlg-pret">
   <div class="dialog-body">
-    <h3>Nouveau prêt</h3>
+    <h3 id="pr-title">Nouvelle avance</h3>
+    <input type="hidden" id="pr-id" />
     <div class="field"><label>Bénéficiaire (nom)</label><input id="pr-beneficiaire" /></div>
     <div class="field"><label>Montant prêté (FCFA)</label><input id="pr-montant" type="number" min="1" /></div>
     <div class="field"><label>Date</label><input id="pr-date" type="date" /></div>
@@ -2047,7 +2048,11 @@ function renderPretsTable() {
       <td>${p.date}</td><td>${escapeHtml(p.beneficiaire)}</td>
       <td class="num">${fmt(p.montant)}</td><td class="num">${fmt(p.montant_rembourse)}</td>
       <td><span class="pill ${p.statut==='rembourse'?'ok':'no'}">${statutLabel[p.statut]}</span></td>
-      <td>${p.statut !== 'rembourse' ? `<button class="btn btn-sm btn-primary" data-remb="${p.id}" data-nom="${escapeHtml(p.beneficiaire)}">Remboursement</button>` : ''}</td>
+      <td style="white-space:nowrap;">
+        ${p.statut !== 'rembourse' ? `<button class="btn btn-sm btn-primary" data-remb="${p.id}" data-nom="${escapeHtml(p.beneficiaire)}">Remboursement</button>` : ''}
+        <button class="btn btn-sm" data-edit-pret="${p.id}">✏️</button>
+        <button class="btn btn-sm btn-danger" data-del-pret="${p.id}" data-nom="${escapeHtml(p.beneficiaire)}">🗑️</button>
+      </td>
     </tr>`).join('') || '<tr><td colspan="6" style="color:var(--text-muted)">Aucun prêt pour le moment.</td></tr>';
   document.querySelectorAll('#tbl-prets button[data-remb]').forEach(btn => btn.addEventListener('click', () => {
     document.getElementById('prb-id').value = btn.dataset.remb;
@@ -2055,23 +2060,49 @@ function renderPretsTable() {
     document.getElementById('prb-montant').value = '';
     document.getElementById('dlg-pret-remb').showModal();
   }));
+  document.querySelectorAll('#tbl-prets button[data-edit-pret]').forEach(btn => btn.addEventListener('click', () => openEditPret(btn.dataset.editPret)));
+  document.querySelectorAll('#tbl-prets button[data-del-pret]').forEach(btn => btn.addEventListener('click', async () => {
+    if (!confirm(`Supprimer l'avance de ${btn.dataset.nom} ? Cette action est irréversible (les mouvements de trésorerie déjà enregistrés ne sont pas modifiés).`)) return;
+    const { error } = await sb.from('prets').delete().eq('id', btn.dataset.delPret);
+    if (error) return alert('Erreur : ' + error.message);
+    await loadAll();
+  }));
+}
+function openEditPret(id) {
+  const p = PRETS.find(x => x.id === id);
+  if (!p) return;
+  document.getElementById('pr-title').textContent = 'Modifier — ' + p.beneficiaire;
+  document.getElementById('pr-id').value = p.id;
+  document.getElementById('pr-beneficiaire').value = p.beneficiaire;
+  document.getElementById('pr-montant').value = p.montant;
+  document.getElementById('pr-date').value = p.date;
+  document.getElementById('pr-note').value = p.note || '';
+  document.getElementById('dlg-pret').showModal();
 }
 document.getElementById('btn-new-pret').addEventListener('click', () => {
+  document.getElementById('pr-title').textContent = 'Nouvelle avance';
+  document.getElementById('pr-id').value = '';
   document.getElementById('pr-beneficiaire').value = ''; document.getElementById('pr-montant').value = '';
   document.getElementById('pr-date').value = todayStr(); document.getElementById('pr-note').value = '';
   document.getElementById('dlg-pret').showModal();
 });
 document.getElementById('pr-cancel').addEventListener('click', () => document.getElementById('dlg-pret').close());
 document.getElementById('pr-confirm').addEventListener('click', async () => {
+  const id = document.getElementById('pr-id').value;
   const beneficiaire = document.getElementById('pr-beneficiaire').value.trim();
   const montant = Number(document.getElementById('pr-montant').value);
   const date = document.getElementById('pr-date').value || todayStr();
   const note = document.getElementById('pr-note').value.trim() || null;
   if (!beneficiaire || !montant || montant <= 0) return alert('Bénéficiaire et montant sont requis.');
-  const { error: e1 } = await sb.from('prets').insert({ beneficiaire, montant, date, note });
-  if (e1) return alert('Erreur : ' + e1.message);
-  const { error: e2 } = await sb.from('mouvements_tresorerie').insert({ type: 'sortie', date, categorie: 'Prêt accordé', description: beneficiaire, montant });
-  if (e2) return alert('Erreur : ' + e2.message);
+  if (id) {
+    const { error } = await sb.from('prets').update({ beneficiaire, montant, date, note }).eq('id', id);
+    if (error) return alert('Erreur : ' + error.message);
+  } else {
+    const { error: e1 } = await sb.from('prets').insert({ beneficiaire, montant, date, note });
+    if (e1) return alert('Erreur : ' + e1.message);
+    const { error: e2 } = await sb.from('mouvements_tresorerie').insert({ type: 'sortie', date, categorie: 'Prêt accordé', description: beneficiaire, montant });
+    if (e2) return alert('Erreur : ' + e2.message);
+  }
   document.getElementById('dlg-pret').close();
   await loadAll();
 });
