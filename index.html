@@ -271,6 +271,7 @@
       <button data-tab="rapport">Rapport financier</button>
       <button data-tab="approvisionnement">Approvisionnement</button>
       <button data-tab="sorties-stock">Historique sorties</button>
+      <button data-tab="justificatifs">📎 Justificatifs</button>
       <button data-tab="fournisseurs">Fournisseurs</button>
       <button data-tab="prets">Avances au personnel</button>
       <button data-tab="pret-produits">Prêts</button>
@@ -376,6 +377,31 @@
         </div>
       </section>
 
+      <!-- JUSTIFICATIFS (toutes les factures/preuves de l'appli, tous modules confondus) -->
+      <section class="tabpanel" id="tab-justificatifs">
+        <div class="card">
+          <div class="toolbar">
+            <div><h3 style="margin:0">Toutes les factures &amp; justificatifs</h3><p class="desc" style="margin:2px 0 0">Toutes les preuves jointes dans l'application (trésorerie, stock, fournisseurs), au même endroit.</p></div>
+          </div>
+          <div class="toolbar" style="flex-wrap:wrap;gap:8px;">
+            <input id="just-search" class="search-bar" style="margin:0;max-width:240px;" placeholder="🔍 Rechercher (description, catégorie, fournisseur, article)…" />
+            <select id="just-filter-source">
+              <option value="">Toutes les sources</option>
+              <option value="tresorerie">Trésorerie</option>
+              <option value="stock">Stock</option>
+              <option value="fournisseur">Fournisseurs</option>
+            </select>
+            <button class="btn btn-sm" id="just-btn-reset-filtres">Réinitialiser</button>
+          </div>
+          <div class="table-wrap">
+            <table id="tbl-justificatifs">
+              <thead><tr><th>Date</th><th>Source</th><th>Détail</th><th class="num">Montant</th><th>Justificatif</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
       <!-- STOCK -->
       <section class="tabpanel" id="tab-stock">
         <div class="card">
@@ -458,14 +484,14 @@
             <button class="btn btn-primary btn-sm" id="btn-new-fournisseur">+ Nouveau fournisseur</button>
           </div>
           <div class="table-wrap">
-            <table id="tbl-fournisseurs"><thead><tr><th>Nom</th><th>Contact</th><th>Articles fournis</th><th class="num">Montant dû</th><th></th></tr></thead><tbody></tbody></table>
+            <table id="tbl-fournisseurs"><thead><tr><th>Nom</th><th>Contact</th><th>Articles fournis</th><th class="num">Montant dû</th><th></th><th></th></tr></thead><tbody></tbody></table>
           </div>
         </div>
         <div class="card" style="margin-top:14px;">
           <h3 style="margin-top:0">Factures &amp; justificatifs fournisseurs</h3>
           <p class="desc">Historique de toutes les dettes et paiements enregistrés, avec la facture/capture jointe si fournie.</p>
           <div class="table-wrap">
-            <table id="tbl-fournisseur-factures"><thead><tr><th>Date</th><th>Fournisseur</th><th>Type</th><th class="num">Montant</th><th>Justificatif</th></tr></thead><tbody></tbody></table>
+            <table id="tbl-fournisseur-factures"><thead><tr><th>Date</th><th>Fournisseur</th><th>Type</th><th class="num">Montant</th><th>Justificatif</th><th></th></tr></thead><tbody></tbody></table>
           </div>
         </div>
       </section>
@@ -706,6 +732,12 @@
     <div class="field"><label>Quantité</label><input id="em-qte" type="number" min="1" /></div>
     <div class="field"><label>Montant (FCFA)</label><input id="em-montant" type="number" min="0" /></div>
     <div class="field"><label>Note</label><input id="em-note" /></div>
+    <div class="field">
+      <label>📎 Facture / justificatif actuel</label>
+      <div id="em-justificatif-actuel" style="font-size:13px;margin-bottom:6px;color:var(--text-secondary);">Aucun justificatif joint.</div>
+      <label>Remplacer / ajouter un justificatif (optionnel — photo ou PDF)</label>
+      <input id="em-file" type="file" accept="image/*,.pdf,application/pdf" capture="environment" />
+    </div>
     <div class="dialog-actions">
       <button class="btn btn-danger" id="em-delete" style="margin-right:auto;">Supprimer</button>
       <button class="btn" id="em-cancel">Annuler</button><button class="btn btn-primary" id="em-confirm">Enregistrer</button>
@@ -742,7 +774,7 @@
     <div class="field"><label>Note (optionnel)</label><input id="ms-note" /></div>
     <div class="field">
       <label>📎 Capture Wave / Orange Money (optionnel)</label>
-      <input id="ms-file" type="file" accept="image/*" capture="environment" />
+      <input id="ms-file" type="file" accept="image/*,.pdf,application/pdf" capture="environment" />
       <div class="file-hint">Photo ou capture d'écran du paiement</div>
     </div>
     <div class="dialog-actions"><button class="btn" id="ms-cancel">Annuler</button><button class="btn btn-primary" id="ms-confirm">Enregistrer</button></div>
@@ -804,12 +836,13 @@
 
 <dialog id="dlg-fournisseur">
   <div class="dialog-body">
-    <h3>Nouveau fournisseur</h3>
+    <h3 id="fr-title">Nouveau fournisseur</h3>
+    <input type="hidden" id="fr-id" />
     <div class="field"><label>Nom</label><input id="fr-nom" /></div>
     <div class="field"><label>Téléphone</label><input id="fr-tel" /></div>
     <div class="field"><label>Email</label><input id="fr-email" type="email" /></div>
     <div class="field"><label>Articles fournis</label><input id="fr-articles" placeholder="ex: Katanas, kimonos" /></div>
-    <div class="field"><label>Montant déjà dû (optionnel)</label><input id="fr-montant" type="number" min="0" value="0" /></div>
+    <div class="field"><label>Montant dû</label><input id="fr-montant" type="number" min="0" value="0" /></div>
     <div class="dialog-actions"><button class="btn" id="fr-cancel">Annuler</button><button class="btn btn-primary" id="fr-confirm">Créer</button></div>
   </div>
 </dialog>
@@ -819,8 +852,29 @@
     <h3 id="fa-title">Fournisseur</h3>
     <input type="hidden" id="fa-id" /><input type="hidden" id="fa-mode" />
     <div class="field"><label id="fa-montant-label">Montant (FCFA)</label><input id="fa-montant" type="number" min="1" /></div>
-    <div class="field" id="fa-file-wrap"><label id="fa-file-label">📎 Facture / justificatif (optionnel)</label><input id="fa-file" type="file" accept="image/*" capture="environment" /></div>
+    <div class="field" id="fa-file-wrap"><label id="fa-file-label">📎 Facture / justificatif (optionnel)</label><input id="fa-file" type="file" accept="image/*,.pdf,application/pdf" capture="environment" /></div>
     <div class="dialog-actions"><button class="btn" id="fa-cancel">Annuler</button><button class="btn btn-primary" id="fa-confirm">Confirmer</button></div>
+  </div>
+</dialog>
+
+<dialog id="dlg-edit-facture-fournisseur">
+  <div class="dialog-body">
+    <h3 id="eff-title">Modifier la facture</h3>
+    <input type="hidden" id="eff-id" />
+    <div class="field"><label>Type</label><select id="eff-type"><option value="dette">Dette (facture reçue)</option><option value="paiement">Paiement</option></select></div>
+    <div class="field"><label>Date</label><input id="eff-date" type="date" /></div>
+    <div class="field"><label>Montant (FCFA)</label><input id="eff-montant" type="number" min="1" /></div>
+    <div class="field">
+      <label>📎 Facture / justificatif actuel</label>
+      <div id="eff-justificatif-actuel" style="font-size:13px;margin-bottom:6px;color:var(--text-secondary);">Aucun justificatif joint.</div>
+      <label>Remplacer / ajouter un justificatif (optionnel — photo ou PDF)</label>
+      <input id="eff-file" type="file" accept="image/*,.pdf,application/pdf" capture="environment" />
+    </div>
+    <div class="dialog-actions">
+      <button class="btn btn-danger" id="eff-delete" style="margin-right:auto;">Supprimer</button>
+      <button class="btn" id="eff-cancel">Annuler</button>
+      <button class="btn btn-primary" id="eff-confirm">Enregistrer</button>
+    </div>
   </div>
 </dialog>
 
@@ -897,7 +951,7 @@
     <input type="hidden" id="ss-article-id" />
     <div class="field"><label>Quantité vendue</label><input id="ss-qte" type="number" min="1" value="1" /></div>
     <div class="field"><label>Montant total encaissé (FCFA)</label><input id="ss-montant" type="number" min="0" /></div>
-    <div class="field"><label>📎 Capture Wave / Orange Money (optionnel)</label><input id="ss-file" type="file" accept="image/*" capture="environment" /></div>
+    <div class="field"><label>📎 Capture Wave / Orange Money (optionnel)</label><input id="ss-file" type="file" accept="image/*,.pdf,application/pdf" capture="environment" /></div>
     <div class="dialog-actions"><button class="btn" id="ss-cancel">Annuler</button><button class="btn btn-primary" id="ss-confirm">Confirmer la vente</button></div>
   </div>
 </dialog>
@@ -908,7 +962,7 @@
     <input type="hidden" id="sr-article-id" />
     <div class="field"><label>Quantité reçue</label><input id="sr-qte" type="number" min="1" value="1" /></div>
     <div class="field"><label>Montant total payé (FCFA)</label><input id="sr-montant" type="number" min="0" /></div>
-    <div class="field"><label>📎 Facture fournisseur (optionnel)</label><input id="sr-file" type="file" accept="image/*" capture="environment" /></div>
+    <div class="field"><label>📎 Facture fournisseur (optionnel)</label><input id="sr-file" type="file" accept="image/*,.pdf,application/pdf" capture="environment" /></div>
     <div class="dialog-actions"><button class="btn" id="sr-cancel">Annuler</button><button class="btn btn-primary" id="sr-confirm">Confirmer</button></div>
   </div>
 </dialog>
@@ -1193,7 +1247,7 @@ async function loadAll() {
   ARTICLES = articles || []; STOCK_MVTS = sm || []; CASH_MVTS = cm || [];
   FOURNISSEURS = fr || []; PRETS = pr || []; FOURNISSEUR_FACTURES = ff || [];
   renderArticlesTable(); renderTresorerieTable(); renderKPIs(); renderCharts(); checkDataAnomalies();
-  renderFournisseursTable(); renderPretsTable(); renderApprovisionnementTable(); renderFournisseurFacturesTable();
+  renderFournisseursTable(); renderPretsTable(); renderApprovisionnementTable(); renderFournisseurFacturesTable(); renderJustificatifsTable();
   const today = todayStr();
   document.getElementById('rep-from').value = today.slice(0,8) + '01';
   document.getElementById('rep-to').value = today;
@@ -2012,6 +2066,14 @@ function openEditMouvement(id) {
   document.getElementById('em-qte').value = m.quantite;
   document.getElementById('em-montant').value = m.montant;
   document.getElementById('em-note').value = m.note || '';
+  document.getElementById('em-file').value = '';
+  const emInfoEl = document.getElementById('em-justificatif-actuel');
+  if (m.justificatif_path) {
+    emInfoEl.innerHTML = `<a href="#" target="_blank" data-justificatif="${escapeHtml(m.justificatif_path)}">📎 Voir le justificatif actuel</a>`;
+    attachJustificatifLinks(emInfoEl);
+  } else {
+    emInfoEl.textContent = 'Aucun justificatif joint pour le moment.';
+  }
   document.getElementById('dlg-edit-mouvement').showModal();
 }
 document.getElementById('em-cancel').addEventListener('click', () => document.getElementById('dlg-edit-mouvement').close());
@@ -2022,8 +2084,11 @@ document.getElementById('em-confirm').addEventListener('click', async () => {
   const quantite = Number(document.getElementById('em-qte').value);
   const montant = Number(document.getElementById('em-montant').value || 0);
   const note = document.getElementById('em-note').value.trim() || null;
+  const file = document.getElementById('em-file').files[0];
   if (!quantite || quantite <= 0) return alert('Quantité invalide.');
-  const { error } = await sb.from('mouvements_stock').update({ type, date, quantite, montant, note }).eq('id', id);
+  const payload = { type, date, quantite, montant, note };
+  if (file) payload.justificatif_path = await uploadJustificatif(file);
+  const { error } = await sb.from('mouvements_stock').update(payload).eq('id', id);
   if (error) return alert('Erreur : ' + error.message);
   document.getElementById('dlg-edit-mouvement').close();
   await loadAll();
@@ -2048,25 +2113,54 @@ function renderFournisseursTable() {
       <td>${escapeHtml(f.articles_fournis||'')}</td>
       <td class="num">${fmt(f.montant_du)}</td>
       <td><button class="btn btn-sm" data-fa="dette" data-id="${f.id}" data-nom="${escapeHtml(f.nom)}">+ Dette</button> <button class="btn btn-sm btn-primary" data-fa="payer" data-id="${f.id}" data-nom="${escapeHtml(f.nom)}">Payer</button></td>
-    </tr>`).join('') || '<tr><td colspan="5" style="color:var(--text-muted)">Aucun fournisseur pour le moment.</td></tr>';
+      <td style="white-space:nowrap;">
+        <button class="btn btn-sm" data-edit-fournisseur="${f.id}">✏️</button>
+        <button class="btn btn-sm btn-danger" data-del-fournisseur="${f.id}" data-nom="${escapeHtml(f.nom)}">🗑️</button>
+      </td>
+    </tr>`).join('') || '<tr><td colspan="6" style="color:var(--text-muted)">Aucun fournisseur pour le moment.</td></tr>';
   document.querySelectorAll('#tbl-fournisseurs button[data-fa]').forEach(btn => btn.addEventListener('click', () => openFournisseurAction(btn.dataset.id, btn.dataset.fa, btn.dataset.nom)));
+  document.querySelectorAll('#tbl-fournisseurs button[data-edit-fournisseur]').forEach(btn => btn.addEventListener('click', () => openEditFournisseur(btn.dataset.editFournisseur)));
+  document.querySelectorAll('#tbl-fournisseurs button[data-del-fournisseur]').forEach(btn => btn.addEventListener('click', async () => {
+    if (!confirm(`Supprimer le fournisseur ${btn.dataset.nom} ? Cette action est irréversible.`)) return;
+    const { error } = await sb.from('fournisseurs').delete().eq('id', btn.dataset.delFournisseur);
+    if (error) return alert("Erreur : " + error.message + (error.message.includes('foreign key') ? ' — supprime d\'abord ses factures dans le tableau ci-dessous.' : ''));
+    await loadAll();
+  }));
+}
+function openEditFournisseur(id) {
+  const f = FOURNISSEURS.find(x => x.id === id);
+  if (!f) return;
+  document.getElementById('fr-title').textContent = 'Modifier — ' + f.nom;
+  document.getElementById('fr-id').value = f.id;
+  document.getElementById('fr-nom').value = f.nom;
+  document.getElementById('fr-tel').value = f.telephone || '';
+  document.getElementById('fr-email').value = f.email || '';
+  document.getElementById('fr-articles').value = f.articles_fournis || '';
+  document.getElementById('fr-montant').value = f.montant_du || 0;
+  document.getElementById('dlg-fournisseur').showModal();
 }
 document.getElementById('btn-new-fournisseur').addEventListener('click', () => {
+  document.getElementById('fr-title').textContent = 'Nouveau fournisseur';
+  document.getElementById('fr-id').value = '';
   ['fr-nom','fr-tel','fr-email','fr-articles'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('fr-montant').value = 0;
   document.getElementById('dlg-fournisseur').showModal();
 });
 document.getElementById('fr-cancel').addEventListener('click', () => document.getElementById('dlg-fournisseur').close());
 document.getElementById('fr-confirm').addEventListener('click', async () => {
+  const id = document.getElementById('fr-id').value;
   const nom = document.getElementById('fr-nom').value.trim();
   if (!nom) return alert('Le nom est requis.');
-  const { error } = await sb.from('fournisseurs').insert({
+  const payload = {
     nom,
     telephone: document.getElementById('fr-tel').value.trim() || null,
     email: document.getElementById('fr-email').value.trim() || null,
     articles_fournis: document.getElementById('fr-articles').value.trim() || null,
     montant_du: Number(document.getElementById('fr-montant').value || 0)
-  });
+  };
+  const { error } = id
+    ? await sb.from('fournisseurs').update(payload).eq('id', id)
+    : await sb.from('fournisseurs').insert(payload);
   if (error) return alert('Erreur : ' + error.message);
   document.getElementById('dlg-fournisseur').close();
   await loadAll();
@@ -2113,9 +2207,98 @@ function renderFournisseurFacturesTable() {
       <td><span class="pill ${f.type==='paiement'?'ok':'no'}">${f.type==='paiement'?'Paiement':'Dette (facture reçue)'}</span></td>
       <td class="num">${fmt(f.montant)}</td>
       <td>${f.justificatif_path ? `<a href="#" target="_blank" data-justificatif="${escapeHtml(f.justificatif_path)}">📎 Voir</a>` : '—'}</td>
-    </tr>`).join('') || '<tr><td colspan="5" style="color:var(--text-muted)">Aucune facture enregistrée.</td></tr>';
+      <td><button class="btn btn-sm" data-edit-facture="${f.id}">✏️</button></td>
+    </tr>`).join('') || '<tr><td colspan="6" style="color:var(--text-muted)">Aucune facture enregistrée.</td></tr>';
   attachJustificatifLinks(document.querySelector('#tbl-fournisseur-factures'));
+  document.querySelectorAll('#tbl-fournisseur-factures button[data-edit-facture]').forEach(btn => btn.addEventListener('click', () => openEditFactureFournisseur(btn.dataset.editFacture)));
 }
+function openEditFactureFournisseur(id) {
+  const f = FOURNISSEUR_FACTURES.find(x => x.id === id);
+  if (!f) return;
+  document.getElementById('eff-title').textContent = 'Modifier la facture — ' + (f.fournisseurs ? f.fournisseurs.nom : '');
+  document.getElementById('eff-id').value = f.id;
+  document.getElementById('eff-type').value = f.type;
+  document.getElementById('eff-date').value = f.date;
+  document.getElementById('eff-montant').value = f.montant;
+  document.getElementById('eff-file').value = '';
+  const effInfoEl = document.getElementById('eff-justificatif-actuel');
+  if (f.justificatif_path) {
+    effInfoEl.innerHTML = `<a href="#" target="_blank" data-justificatif="${escapeHtml(f.justificatif_path)}">📎 Voir le justificatif actuel</a>`;
+    attachJustificatifLinks(effInfoEl);
+  } else {
+    effInfoEl.textContent = 'Aucun justificatif joint pour le moment.';
+  }
+  document.getElementById('dlg-edit-facture-fournisseur').showModal();
+}
+document.getElementById('eff-cancel').addEventListener('click', () => document.getElementById('dlg-edit-facture-fournisseur').close());
+document.getElementById('eff-confirm').addEventListener('click', async () => {
+  const id = document.getElementById('eff-id').value;
+  const type = document.getElementById('eff-type').value;
+  const date = document.getElementById('eff-date').value;
+  const montant = Number(document.getElementById('eff-montant').value);
+  const file = document.getElementById('eff-file').files[0];
+  if (!montant || montant <= 0) return alert('Montant invalide.');
+  const payload = { type, date, montant };
+  if (file) payload.justificatif_path = await uploadJustificatif(file);
+  const { error } = await sb.from('fournisseur_factures').update(payload).eq('id', id);
+  if (error) return alert('Erreur : ' + error.message);
+  document.getElementById('dlg-edit-facture-fournisseur').close();
+  await loadAll();
+});
+document.getElementById('eff-delete').addEventListener('click', async () => {
+  const id = document.getElementById('eff-id').value;
+  if (!confirm('Supprimer cette facture ? Cette action est irréversible.')) return;
+  const { error } = await sb.from('fournisseur_factures').delete().eq('id', id);
+  if (error) return alert('Erreur : ' + error.message);
+  document.getElementById('dlg-edit-facture-fournisseur').close();
+  await loadAll();
+});
+
+/* ---------- JUSTIFICATIFS (toutes les factures, tous modules) ---------- */
+function collectAllJustificatifs() {
+  const items = [];
+  CASH_MVTS.forEach(m => { if (m.justificatif_path) items.push({
+    date: m.date, source: 'tresorerie', sourceLabel: 'Trésorerie',
+    detail: `${m.categorie}${m.description ? ' — ' + m.description : ''}`,
+    montant: m.montant, justificatif_path: m.justificatif_path
+  }); });
+  STOCK_MVTS.forEach(m => { if (m.justificatif_path) items.push({
+    date: m.date, source: 'stock', sourceLabel: 'Stock',
+    detail: `${m.type === 'entree' ? 'Entrée' : 'Sortie'} — ${m.articles ? m.articles.code + ' · ' + m.articles.libelle : ''}`,
+    montant: m.montant, justificatif_path: m.justificatif_path
+  }); });
+  FOURNISSEUR_FACTURES.forEach(f => { if (f.justificatif_path) items.push({
+    date: f.date, source: 'fournisseur', sourceLabel: 'Fournisseur',
+    detail: `${f.type === 'paiement' ? 'Paiement' : 'Dette'} — ${f.fournisseurs ? f.fournisseurs.nom : ''}`,
+    montant: f.montant, justificatif_path: f.justificatif_path
+  }); });
+  return items.sort((a, b) => b.date.localeCompare(a.date));
+}
+function renderJustificatifsTable() {
+  const q = (document.getElementById('just-search').value || '').trim().toLowerCase();
+  const src = document.getElementById('just-filter-source').value;
+  const filtered = collectAllJustificatifs().filter(it => {
+    if (src && it.source !== src) return false;
+    if (q && !it.detail.toLowerCase().includes(q)) return false;
+    return true;
+  });
+  document.querySelector('#tbl-justificatifs tbody').innerHTML = filtered.map(it => `
+    <tr>
+      <td>${escapeHtml(it.date)}</td>
+      <td><span class="pill info">${escapeHtml(it.sourceLabel)}</span></td>
+      <td>${escapeHtml(it.detail)}</td>
+      <td class="num">${fmt(it.montant)}</td>
+      <td><a href="#" target="_blank" data-justificatif="${escapeHtml(it.justificatif_path)}">📎 Voir</a></td>
+    </tr>`).join('') || '<tr><td colspan="5" style="color:var(--text-muted)">Aucun justificatif enregistré pour le moment.</td></tr>';
+  attachJustificatifLinks(document.querySelector('#tbl-justificatifs'));
+}
+document.getElementById('just-search').addEventListener('input', renderJustificatifsTable);
+document.getElementById('just-filter-source').addEventListener('change', renderJustificatifsTable);
+document.getElementById('just-btn-reset-filtres').addEventListener('click', () => {
+  document.getElementById('just-search').value = '';
+  document.getElementById('just-filter-source').value = '';
+  renderJustificatifsTable();
+});
 
 /* ---------- PRETS (admin only) ---------- */
 function renderPretsTable() {
