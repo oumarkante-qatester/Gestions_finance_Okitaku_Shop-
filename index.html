@@ -1988,6 +1988,14 @@ document.getElementById('mb-confirm').addEventListener('click', async () => {
 });
 
 /* ---------- SHOP SETTINGS (logo + coordonnées) ---------- */
+function setFavicon(url) {
+  if (!url) return;
+  document.querySelectorAll('link[rel~="icon"]').forEach(el => el.remove());
+  const link = document.createElement('link');
+  link.rel = 'icon';
+  link.href = url;
+  document.head.appendChild(link);
+}
 async function loadShopSettings() {
   const { data, error } = await sb.from('shop_settings').select('*').eq('id', true).maybeSingle();
   if (error || !data) return;
@@ -1998,6 +2006,7 @@ async function loadShopSettings() {
     logoEl.style.display = 'inline-block';
     const brandText = document.getElementById('brand-text');
     if (brandText) brandText.style.display = 'none';
+    setFavicon(data.logo_url);
   }
   if (CURRENT_ROLE === 'admin') {
     document.getElementById('settings-email').value = data.email_contact || '';
